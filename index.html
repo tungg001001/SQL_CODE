@@ -351,7 +351,7 @@
     <!-- Flag 評分區域 -->
     <div class="flag-box">
         <h3>🚩 關卡 Flag 評分驗證</h3>
-        <p style="color: #aaa; font-size: 13px; margin-top: 0;">將關卡中撈出的 <code>FLAG{...}</code> 輸入下方進行比對評分：</p>
+        <p style="color: #aaa; font-size: 13px; margin-top: 0;">請將 Response Inspector 中獲得的 <code>FLAG{...}</code> 複製並貼入下方進行驗證：</p>
         <div class="flag-input-group">
             <input type="text" id="flag_input" placeholder="FLAG{md5_hash_string}">
             <button class="action-btn" style="background: #ffb700;" onclick="verifyFlag()">提交驗證</button>
@@ -409,9 +409,7 @@
             setTimeout(() => {
                 timerEl.innerText = `Execution Time: ${delayMs}ms`;
                 consoleEl.innerText = JSON.stringify(data, null, 2);
-                if (data.flag) {
-                    document.getElementById('flag_input').value = data.flag;
-                }
+                // 已移除自動把 Flag 帶入輸入框的程式碼，保持輸入框空白供使用者手動輸入
             }, delayMs);
         }
 
