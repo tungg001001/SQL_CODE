@@ -395,13 +395,13 @@
             document.getElementById(`lab${num}`).classList.add('active');
             document.getElementById(`nav-btn-${num}`).classList.add('active');
 
-            // 切換關卡時，自動清空 Response Inspector 內容與執行時間
+            // 1. 切換關卡時，自動清空 Response Inspector 內容與執行時間
             document.getElementById('console').innerText = "等待發送 Payload...";
             document.getElementById('timer_display').innerText = "Time: 0ms";
             
-            // 清空 Flag 驗證結果提示訊息
-            const resEl = document.getElementById('flag_result');
-            resEl.innerText = "";
+            // 2. 切換關卡時，自動清空 Flag 輸入框與驗證結果提示
+            document.getElementById('flag_input').value = "";
+            document.getElementById('flag_result').innerText = "";
         }
 
         function toggleHint(num) {
