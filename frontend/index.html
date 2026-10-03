@@ -236,7 +236,7 @@
     <!-- Lab 3 -->
     <div id="lab3" class="panel">
         <h2>Lab 3: 關鍵字黑名單繞過 (WAF Bypass)</h2>
-        <p><strong>目標：</strong> 後端設有 WAF 黑名單，過濾了 <code>UNION</code>, <code>SELECT</code> (不分大小寫) 與空格。請嘗試繞過過濾。</p>
+        <p><strong>目標：</strong> 後端設有 WAF 黑名單，過濾了 <code>UNION</code>, <code>SELECT</code> 與空格。請嘗試繞過過濾。</p>
         <div class="form-group">
             <label>Username Search</label>
             <input type="text" id="l3_input" value="UnIOn/**/SeLeCt">
@@ -406,7 +406,7 @@
             h.style.display = h.style.display === 'block' ? 'none' : 'block';
         }
 
-        // 通用 API 發送器 (自動測量執行時間)
+        // 通用 API 發送器 (自動測量執行時間與填入 Flag)
         async function sendReq(url, method = 'GET', body = null) {
             const consoleEl = document.getElementById('console');
             const timerEl = document.getElementById('timer_display');
@@ -429,6 +429,11 @@
 
                 timerEl.innerText = `Execution Time: ${duration}ms`;
                 consoleEl.innerText = JSON.stringify(data, null, 2);
+
+                // 自動抓取 JSON 中的 flag 填入下方驗證框
+                if (data.flag) {
+                    document.getElementById('flag_input').value = data.flag;
+                }
             } catch (err) {
                 consoleEl.innerText = "Error: " + err.message;
             }
