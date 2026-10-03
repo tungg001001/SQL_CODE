@@ -394,6 +394,14 @@
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`lab${num}`).classList.add('active');
             document.getElementById(`nav-btn-${num}`).classList.add('active');
+
+            // 切換關卡時，自動清空 Response Inspector 內容與執行時間
+            document.getElementById('console').innerText = "等待發送 Payload...";
+            document.getElementById('timer_display').innerText = "Time: 0ms";
+            
+            // 清空 Flag 驗證結果提示訊息
+            const resEl = document.getElementById('flag_result');
+            resEl.innerText = "";
         }
 
         function toggleHint(num) {
