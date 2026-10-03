@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection 互動教學評分系統 (GitHub Pages 免後端版)</title>
+    <title>SQL Injection 互動教學評分系統 (教師導出與管理版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -25,7 +25,7 @@
             gap: 10px;
         }
         h1 { color: #00ff66; margin: 0; font-size: 22px; }
-        .header-badges { display: flex; gap: 10px; align-items: center; }
+        .header-badges { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .badge {
             background: #2a2a2a;
             padding: 6px 14px;
@@ -38,6 +38,39 @@
         .score-badge { color: #ffb700; border-color: #ffb700; }
         .progress-badge { color: #00ff66; border-color: #00ff66; }
 
+        /* 學生個人資料填寫區 */
+        .student-info-bar {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-left: 4px solid #00e5ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .student-info-bar label { color: #00e5ff; font-weight: bold; font-size: 13px; margin: 0; }
+        .student-info-bar input {
+            padding: 6px 10px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 4px;
+            width: 130px;
+        }
+
+        /* 教師管理專區 */
+        .teacher-panel {
+            background: #221c10;
+            border: 1px solid #ffb700;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .teacher-panel h3 { color: #ffb700; margin-top: 0; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
+        
         .nav-container {
             display: flex;
             gap: 8px;
@@ -95,20 +128,25 @@
         }
         input:focus, textarea:focus { outline: none; border-color: #00ff66; }
         
-        .btn-group { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
         button.action-btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             background: #00ff66;
             color: #000;
             font-weight: bold;
             cursor: pointer;
             border: none;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
         }
         button.action-btn:hover { background: #00cc52; }
+        button.teacher-btn {
+            background: #ffb700;
+            color: #000;
+        }
+        button.teacher-btn:hover { background: #e0a200; }
         button.hint-btn {
-            padding: 10px 15px;
+            padding: 8px 14px;
             background: #333;
             color: #ffb700;
             border: 1px solid #ffb700;
@@ -155,16 +193,68 @@
         }
         .flag-box h3 { color: #ffb700; margin-top: 0; }
         .flag-input-group { display: flex; gap: 10px; }
+
+        .answer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .answer-table th, .answer-table td {
+            border: 1px solid #444;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .answer-table th { background: #333; color: #ffb700; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>🛡️ SQL Injection 互動教學系統 (GitHub Pages 獨立版)</h1>
+        <h1>🛡️ SQL Injection 互動教學系統 (評分與成績管理版)</h1>
         <div class="header-badges">
             <div class="badge score-badge" id="score_display">🏆 得分: 0 pts</div>
             <div class="badge progress-badge" id="progress_display">🚩 通關: 0 / 10</div>
             <div class="badge session-badge" id="session_display">Session: Initializing...</div>
+        </div>
+    </div>
+
+    <!-- 學生個人資料輸入區 -->
+    <div class="student-info-bar">
+        <label>班級：</label>
+        <input type="text" id="stu_class" placeholder="例：高一1班" onchange="saveStudentInfo()">
+        <label>座號：</label>
+        <input type="text" id="stu_number" placeholder="例：05" onchange="saveStudentInfo()">
+        <label>姓名：</label>
+        <input type="text" id="stu_name" placeholder="例：王小明" onchange="saveStudentInfo()">
+        <span style="color: #888; font-size: 12px; margin-left: auto;">💡 資料將自動與答題成績綁定</span>
+    </div>
+
+    <!-- 教師功能專區 -->
+    <div class="teacher-panel">
+        <h3>
+            <span>🎓 教師管理功能 (預設密碼: teacher123)</span>
+            <span id="teacher_status" style="font-size: 12px; color: #aaa;">未驗證</span>
+        </h3>
+        <div class="btn-group">
+            <button class="action-btn teacher-btn" onclick="toggleAnswers()">🔑 驗證密碼並公佈答案</button>
+            <button class="action-btn" style="background: #00e5ff;" onclick="exportScoreCSV()">💾 匯出/儲存個人成績 (CSV)</button>
+            <button class="action-btn" style="background: #ff4444; color: #fff;" onclick="resetProgress()">🔄 清空成績重新開始</button>
+        </div>
+
+        <!-- 答案展示區域 (預設隱藏) -->
+        <div id="answers_section" style="display: none; margin-top: 15px;">
+            <h4 style="color: #00ff66; margin-bottom: 5px;">📖 全關卡 Flag 與參考解法對照表：</h4>
+            <table class="answer-table">
+                <thead>
+                    <tr>
+                        <th>關卡</th>
+                        <th>正確 Flag 標籤</th>
+                        <th>參考攻擊 Payload</th>
+                    </tr>
+                </thead>
+                <tbody id="answer_table_body"></tbody>
+            </table>
         </div>
     </div>
 
@@ -360,6 +450,8 @@
     </div>
 
     <script>
+        const TEACHER_PASS = "teacher123";
+
         const FLAGS = {
             1: "FLAG{auth_bypass_successful_login}",
             2: "FLAG{union_select_data_exfiltration}",
@@ -373,6 +465,19 @@
             10: "FLAG{json_field_direct_concat_vulnerable}"
         };
 
+        const SOLUTIONS = {
+            1: "admin' --",
+            2: "1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags",
+            3: "UnIOn/**/SeLeCt",
+            4: "1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)",
+            5: "admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F",
+            6: "1' AND DELAY --",
+            7: "guest' OR '1'='1",
+            8: "UPDATE users SET role = 'admin' WHERE id = 2;",
+            9: "%df' OR 1=1 --",
+            10: '{"id": "1 OR 1=1"}'
+        };
+
         const sessionId = "ghpages_" + Math.random().toString(36).substring(2, 10);
         document.getElementById('session_display').innerText = `Session: ${sessionId}`;
 
@@ -380,6 +485,7 @@
         const solvedLabs = new Set();
         const POINTS_PER_LAB = 10;
         let storedBio = "";
+        let isTeacherUnlocked = false;
 
         function updateScoreboard() {
             const count = solvedLabs.size;
@@ -420,6 +526,79 @@
             }, delayMs);
         }
 
+        /* 學生與教師管理功能邏輯 */
+        function saveStudentInfo() {
+            const stuClass = document.getElementById('stu_class').value;
+            const stuNumber = document.getElementById('stu_number').value;
+            const stuName = document.getElementById('stu_name').value;
+            localStorage.setItem('student_info', JSON.stringify({ stuClass, stuNumber, stuName }));
+        }
+
+        function toggleAnswers() {
+            if (!isTeacherUnlocked) {
+                const pass = prompt("請輸入教師管理密碼：");
+                if (pass === TEACHER_PASS) {
+                    isTeacherUnlocked = true;
+                    document.getElementById('teacher_status').innerText = "🔓 已解鎖 (教師權限)";
+                    document.getElementById('teacher_status').style.color = "#00ff66";
+                    renderAnswerTable();
+                    document.getElementById('answers_section').style.display = 'block';
+                } else if (pass !== null) {
+                    alert("❌ 密碼錯誤！");
+                }
+            } else {
+                const sec = document.getElementById('answers_section');
+                sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        function renderAnswerTable() {
+            const tbody = document.getElementById('answer_table_body');
+            tbody.innerHTML = "";
+            for (let i = 1; i <= 10; i++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>Lab ${i}</td>
+                    <td><code>${FLAGS[i]}</code></td>
+                    <td><code>${SOLUTIONS[i]}</code></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function exportScoreCSV() {
+            const stuClass = document.getElementById('stu_class').value || "未填寫班級";
+            const stuNumber = document.getElementById('stu_number').value || "未填寫座號";
+            const stuName = document.getElementById('stu_name').value || "未填寫姓名";
+            const score = solvedLabs.size * POINTS_PER_LAB;
+            const solvedList = Array.from(solvedLabs).join(';');
+
+            const csvContent = "\uFEFF班級,座號,姓名,Session ID,總分,完成關卡數量,已通關Lab列表\n"
+                + `"${stuClass}","${stuNumber}","${stuName}","${sessionId}",${score},${solvedLabs.size},"${solvedList}"\n`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `SQLi_成績_${stuClass}_${stuNumber}_${stuName}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function resetProgress() {
+            if (confirm("確定要重置所有完成進度與得分嗎？")) {
+                solvedLabs.clear();
+                updateScoreboard();
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('solved');
+                    btn.innerText = btn.innerText.replace('✓ ', '');
+                });
+                alert("已完成重置！");
+            }
+        }
+
+        /* 關卡模擬邏輯 */
         function submitLab1() {
             const u = document.getElementById('l1_user').value;
             if (u.includes("'") && (u.includes("--") || u.includes("/*") || u.toLowerCase().includes("or"))) {
