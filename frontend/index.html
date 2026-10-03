@@ -16,21 +16,32 @@
         }
         .header {
             border-bottom: 2px solid #00ff66;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        h1 { color: #00ff66; margin: 0; font-size: 24px; }
-        .session-badge {
+        h1 { color: #00ff66; margin: 0; font-size: 22px; }
+        
+        .header-badges {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .badge {
             background: #2a2a2a;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 13px;
             border: 1px solid #444;
-            color: #00e5ff;
+            font-weight: bold;
         }
+        .session-badge { color: #00e5ff; }
+        .score-badge { color: #ffb700; border-color: #ffb700; }
+        .progress-badge { color: #00ff66; border-color: #00ff66; }
 
         /* 選單切換區 */
         .nav-container {
@@ -60,6 +71,14 @@
             color: #000;
             border-color: #00ff66;
             box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
+        }
+        .nav-btn.solved {
+            border-color: #00ff66;
+            color: #00ff66;
+        }
+        .nav-btn.solved.active {
+            background: #00ff66;
+            color: #000;
         }
 
         /* 關卡面板 */
@@ -158,22 +177,26 @@
 <body>
 
     <div class="header">
-        <h1>🛡️ SQL Injection 互動教學系統 (10-Labs)</h1>
-        <div class="session-badge" id="session_display">Session: Initializing...</div>
+        <h1>🛡️ SQL Injection 互動教學系統</h1>
+        <div class="header-badges">
+            <div class="badge score-badge" id="score_display">🏆 得分: 0 pts</div>
+            <div class="badge progress-badge" id="progress_display">🚩 通關: 0 / 10</div>
+            <div class="badge session-badge" id="session_display">Session: Initializing...</div>
+        </div>
     </div>
 
     <!-- 10 大關卡選單 -->
     <div class="nav-container">
-        <button class="nav-btn active" onclick="switchLab(1)">Lab 1: Auth Bypass</button>
-        <button class="nav-btn" onclick="switchLab(2)">Lab 2: UNION 撈取</button>
-        <button class="nav-btn" onclick="switchLab(3)">Lab 3: WAF 繞過</button>
-        <button class="nav-btn" onclick="switchLab(4)">Lab 4: 報錯注入</button>
-        <button class="nav-btn" onclick="switchLab(5)">Lab 5: 布林盲注</button>
-        <button class="nav-btn" onclick="switchLab(6)">Lab 6: 時間盲注</button>
-        <button class="nav-btn" onclick="switchLab(7)">Lab 7: 二次注入</button>
-        <button class="nav-btn" onclick="switchLab(8)">Lab 8: 堆疊查詢</button>
-        <button class="nav-btn" onclick="switchLab(9)">Lab 9: 寬位元組</button>
-        <button class="nav-btn" onclick="switchLab(10)">Lab 10: JSON 注入</button>
+        <button class="nav-btn active" id="nav-btn-1" onclick="switchLab(1)">Lab 1: Auth Bypass</button>
+        <button class="nav-btn" id="nav-btn-2" onclick="switchLab(2)">Lab 2: UNION 撈取</button>
+        <button class="nav-btn" id="nav-btn-3" onclick="switchLab(3)">Lab 3: WAF 繞過</button>
+        <button class="nav-btn" id="nav-btn-4" onclick="switchLab(4)">Lab 4: 報錯注入</button>
+        <button class="nav-btn" id="nav-btn-5" onclick="switchLab(5)">Lab 5: 布林盲注</button>
+        <button class="nav-btn" id="nav-btn-6" onclick="switchLab(6)">Lab 6: 時間盲注</button>
+        <button class="nav-btn" id="nav-btn-7" onclick="switchLab(7)">Lab 7: 二次注入</button>
+        <button class="nav-btn" id="nav-btn-8" onclick="switchLab(8)">Lab 8: 堆疊查詢</button>
+        <button class="nav-btn" id="nav-btn-9" onclick="switchLab(9)">Lab 9: 寬位元組</button>
+        <button class="nav-btn" id="nav-btn-10" onclick="switchLab(10)">Lab 10: JSON 注入</button>
     </div>
 
     <!-- Lab 1 -->
@@ -358,11 +381,24 @@
         const sessionId = "session_" + Math.random().toString(36).substring(2, 10);
         document.getElementById('session_display').innerText = `Session: ${sessionId}`;
 
+        // 計分與通關追蹤變數
+        let currentLab = 1;
+        const solvedLabs = new Set();
+        const POINTS_PER_LAB = 10;
+
+        function updateScoreboard() {
+            const count = solvedLabs.size;
+            const score = count * POINTS_PER_LAB;
+            document.getElementById('score_display').innerText = `🏆 得分: ${score} pts`;
+            document.getElementById('progress_display').innerText = `🚩 通關: ${count} / 10`;
+        }
+
         function switchLab(num) {
+            currentLab = num;
             document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`lab${num}`).classList.add('active');
-            event.target.classList.add('active');
+            document.getElementById(`nav-btn-${num}`).classList.add('active');
         }
 
         function toggleHint(num) {
@@ -418,11 +454,17 @@
             }
         }
 
-        // Flag 驗證 API
+        // Flag 驗證 API (包含計分機制)
         async function verifyFlag() {
-            const user_flag = document.getElementById('flag_input').value;
+            const user_flag = document.getElementById('flag_input').value.trim();
             const resEl = document.getElementById('flag_result');
             
+            if (!user_flag) {
+                resEl.innerText = "請輸入 Flag 後再提交！";
+                resEl.style.color = '#ffb700';
+                return;
+            }
+
             try {
                 const res = await fetch('/api/verify_flag', {
                     method: 'POST',
@@ -430,8 +472,28 @@
                     body: JSON.stringify({ user_flag })
                 });
                 const data = await res.json();
+                
                 resEl.innerText = data.message;
-                resEl.style.color = data.success ? '#00ff66' : '#ff4444';
+                if (data.success) {
+                    resEl.style.color = '#00ff66';
+                    
+                    // 紀錄成功通關的 Lab
+                    if (!solvedLabs.has(currentLab)) {
+                        solvedLabs.add(currentLab);
+                        
+                        // 更新按鈕樣式與文字 (加勾勾)
+                        const btn = document.getElementById(`nav-btn-${currentLab}`);
+                        btn.classList.add('solved');
+                        if (!btn.innerText.includes('✓')) {
+                            btn.innerText = `✓ ${btn.innerText}`;
+                        }
+                        
+                        // 更新計分板
+                        updateScoreboard();
+                    }
+                } else {
+                    resEl.style.color = '#ff4444';
+                }
             } catch (e) {
                 resEl.innerText = "驗證失敗，伺服器連線錯誤。";
                 resEl.style.color = '#ff4444';
