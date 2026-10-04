@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection 互動教學評分系統 (雙階梯提示扣分版)</title>
+    <title>SQL Injection 互動教學評分系統 (全班成績集中管理版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -239,7 +239,7 @@
 <body>
 
     <div class="header">
-        <h1>🛡️ SQL Injection 互動教學系統 (評分與成績管理版)</h1>
+        <h1>🛡️ SQL Injection 互動教學系統 (全班成績集中管理版)</h1>
         <div class="header-badges">
             <div class="badge score-badge" id="score_display">🏆 得分: 0 pts</div>
             <div class="badge progress-badge" id="progress_display">🚩 通關: 0 / 10</div>
@@ -255,7 +255,7 @@
         <input type="text" id="stu_number" placeholder="例：05" onchange="saveStudentInfo()">
         <label>姓名：</label>
         <input type="text" id="stu_name" placeholder="例：王小明" onchange="saveStudentInfo()">
-        <span style="color: #888; font-size: 12px; margin-left: auto;">💡 資料將自動與答題成績綁定</span>
+        <span style="color: #888; font-size: 12px; margin-left: auto;">💡 資料將自動與答題成績綁定並儲存於本機</span>
     </div>
 
     <!-- 教師功能專區 -->
@@ -265,13 +265,36 @@
             <span id="teacher_status" style="font-size: 12px; color: #aaa;">🔒 未驗證 (關鎖狀態)</span>
         </h3>
         <div class="btn-group">
-            <button class="action-btn teacher-btn" id="teacher_lock_btn" onclick="toggleTeacherLock()">🔑 輸入密碼解鎖答案</button>
-            <button class="action-btn" style="background: #00e5ff;" onclick="exportScoreCSV()">💾 匯出/儲存個人成績 (CSV)</button>
-            <button class="action-btn" style="background: #ff4444; color: #fff;" onclick="resetProgress()">🔄 清空成績重新開始</button>
+            <button class="action-btn teacher-btn" id="teacher_lock_btn" onclick="toggleTeacherLock()">🔑 輸入密碼解鎖權限</button>
+            <button class="action-btn" style="background: #00e5ff;" onclick="exportCurrentScoreCSV()">💾 匯出目前學生個人成績 (CSV)</button>
+            <button class="action-btn" style="background: #ff4444; color: #fff;" onclick="resetProgress()">🔄 清空目前答題紀錄</button>
         </div>
 
-        <!-- 答案展示區域 (預設隱藏) -->
-        <div id="answers_section" style="display: none; margin-top: 15px;">
+        <!-- 教師專屬管理區塊 (預設隱藏) -->
+        <div id="teacher_admin_section" style="display: none; margin-top: 15px; border-top: 1px dashed #ffb700; padding-top: 15px;">
+            <div class="btn-group" style="margin-bottom: 15px;">
+                <button class="action-btn" style="background: #ffb700; color: #000;" onclick="exportAllStudentsCSV()">📊 匯出全班所有學生成績總表 (CSV)</button>
+                <button class="action-btn" style="background: #e65100; color: #fff;" onclick="clearAllStudentsData()">🗑️ 清空歷史全班學生資料庫</button>
+            </div>
+
+            <!-- 全班學生成績即時總表 -->
+            <h4 style="color: #00ff66; margin-bottom: 5px;">📋 已紀錄之學生數據庫總覽：</h4>
+            <table class="answer-table" style="margin-bottom: 20px;">
+                <thead>
+                    <tr>
+                        <th>班級</th>
+                        <th>座號</th>
+                        <th>姓名</th>
+                        <th>總得分</th>
+                        <th>通關關卡數</th>
+                        <th>最後更新時間</th>
+                    </tr>
+                </thead>
+                <tbody id="all_students_table_body">
+                    <tr><td colspan="6" style="text-align: center; color: #888;">尚無歷史學生紀錄</td></tr>
+                </tbody>
+            </table>
+
             <h4 style="color: #00ff66; margin-bottom: 5px;">📖 全關卡 Flag 與參考解法對照表：</h4>
             <table class="answer-table">
                 <thead>
@@ -542,6 +565,16 @@
         let storedBio = "";
         let isTeacherUnlocked = false;
 
+        window.onload = function() {
+            const savedInfo = localStorage.getItem('student_info');
+            if (savedInfo) {
+                const info = JSON.parse(savedInfo);
+                if (info.stuClass) document.getElementById('stu_class').value = info.stuClass;
+                if (info.stuNumber) document.getElementById('stu_number').value = info.stuNumber;
+                if (info.stuName) document.getElementById('stu_name').value = info.stuName;
+            }
+        };
+
         function calculateTotalScore() {
             const baseScore = solvedLabs.size * POINTS_PER_LAB;
             let totalDeduction = 0;
@@ -552,7 +585,7 @@
             }
             
             const finalScore = baseScore - totalDeduction;
-            return finalScore < 0 ? 0 : finalScore; // 不會低於 0 分
+            return finalScore < 0 ? 0 : finalScore;
         }
 
         function updateScoreboard() {
@@ -560,6 +593,43 @@
             const score = calculateTotalScore();
             document.getElementById('score_display').innerText = `🏆 得分: ${score} pts`;
             document.getElementById('progress_display').innerText = `🚩 通關: ${count} / 10`;
+
+            // 同步將數據更新至集中資料庫
+            saveToGlobalDatabase();
+        }
+
+        /* 集中學生資料庫 (Local Database Manager) */
+        function saveToGlobalDatabase() {
+            const stuClass = document.getElementById('stu_class').value.trim() || "未填寫班級";
+            const stuNumber = document.getElementById('stu_number').value.trim() || "未填寫座號";
+            const stuName = document.getElementById('stu_name').value.trim() || "未填寫姓名";
+
+            const studentKey = `${stuClass}_${stuNumber}_${stuName}`;
+            let allDb = JSON.parse(localStorage.getItem('all_students_database') || "{}");
+
+            allDb[studentKey] = {
+                stuClass: stuClass,
+                stuNumber: stuNumber,
+                stuName: stuName,
+                score: calculateTotalScore(),
+                solvedCount: solvedLabs.size,
+                solvedList: Array.from(solvedLabs).join(';'),
+                sessionId: sessionId,
+                lastUpdated: new Date().toLocaleString()
+            };
+
+            localStorage.setItem('all_students_database', JSON.stringify(allDb));
+            if (isTeacherUnlocked) {
+                renderAllStudentsTable();
+            }
+        }
+
+        function saveStudentInfo() {
+            const stuClass = document.getElementById('stu_class').value;
+            const stuNumber = document.getElementById('stu_number').value;
+            const stuName = document.getElementById('stu_name').value;
+            localStorage.setItem('student_info', JSON.stringify({ stuClass, stuNumber, stuName }));
+            saveToGlobalDatabase();
         }
 
         function useHint(labId, hintLevel) {
@@ -620,18 +690,11 @@
             }, delayMs);
         }
 
-        /* 學生與教師管理功能邏輯 */
-        function saveStudentInfo() {
-            const stuClass = document.getElementById('stu_class').value;
-            const stuNumber = document.getElementById('stu_number').value;
-            const stuName = document.getElementById('stu_name').value;
-            localStorage.setItem('student_info', JSON.stringify({ stuClass, stuNumber, stuName }));
-        }
-
+        /* 教師功能 */
         function toggleTeacherLock() {
             const lockBtn = document.getElementById('teacher_lock_btn');
             const statusEl = document.getElementById('teacher_status');
-            const answerSec = document.getElementById('answers_section');
+            const adminSec = document.getElementById('teacher_admin_section');
 
             if (!isTeacherUnlocked) {
                 const pass = prompt("請輸入教師管理密碼：");
@@ -639,9 +702,10 @@
                     isTeacherUnlocked = true;
                     statusEl.innerText = "🔓 已解鎖 (教師權限)";
                     statusEl.style.color = "#00ff66";
-                    lockBtn.innerText = "🔒 關鎖並隱藏答案";
+                    lockBtn.innerText = "🔒 關鎖並隱藏答案與數據";
                     renderAnswerTable();
-                    answerSec.style.display = 'block';
+                    renderAllStudentsTable();
+                    adminSec.style.display = 'block';
                 } else if (pass !== null) {
                     alert("❌ 密碼錯誤！");
                 }
@@ -649,9 +713,35 @@
                 isTeacherUnlocked = false;
                 statusEl.innerText = "🔒 未驗證 (關鎖狀態)";
                 statusEl.style.color = "#aaa";
-                lockBtn.innerText = "🔑 輸入密碼解鎖答案";
-                answerSec.style.display = 'none';
+                lockBtn.innerText = "🔑 輸入密碼解鎖權限";
+                adminSec.style.display = 'none';
             }
+        }
+
+        function renderAllStudentsTable() {
+            const tbody = document.getElementById('all_students_table_body');
+            const allDb = JSON.parse(localStorage.getItem('all_students_database') || "{}");
+            const keys = Object.keys(allDb);
+
+            if (keys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">尚無歷史學生紀錄</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = "";
+            keys.forEach(k => {
+                const stu = allDb[k];
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${stu.stuClass}</td>
+                    <td>${stu.stuNumber}</td>
+                    <td>${stu.stuName}</td>
+                    <td style="color: #ffb700; font-weight: bold;">${stu.score}</td>
+                    <td style="color: #00ff66;">${stu.solvedCount} / 10</td>
+                    <td>${stu.lastUpdated}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function renderAnswerTable() {
@@ -668,7 +758,36 @@
             }
         }
 
-        function exportScoreCSV() {
+        // 匯出全班學生總表
+        function exportAllStudentsCSV() {
+            const allDb = JSON.parse(localStorage.getItem('all_students_database') || "{}");
+            const keys = Object.keys(allDb);
+
+            if (keys.length === 0) {
+                alert("目前歷史資料庫中沒有學生成績數據！");
+                return;
+            }
+
+            let csvContent = "\uFEFF班級,座號,姓名,總得分,通關關卡數,通關Lab列表,Session ID,最後更新時間\n";
+
+            keys.forEach(k => {
+                const stu = allDb[k];
+                csvContent += `"${stu.stuClass}","${stu.stuNumber}","${stu.stuName}",${stu.score},${stu.solvedCount},"${stu.solvedList}","${stu.sessionId}","${stu.lastUpdated}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            const dateStr = new Date().toISOString().slice(0,10);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `SQLi_全班學生成績總表_${dateStr}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 匯出單一學生成績
+        function exportCurrentScoreCSV() {
             const stuClass = document.getElementById('stu_class').value || "未填寫班級";
             const stuNumber = document.getElementById('stu_number').value || "未填寫座號";
             const stuName = document.getElementById('stu_name').value || "未填寫姓名";
@@ -688,8 +807,16 @@
             document.body.removeChild(link);
         }
 
+        function clearAllStudentsData() {
+            if (confirm("⚠️ 警告：這將會徹底清空本機儲存的【全班所有學生成績總表】！確定要清空嗎？")) {
+                localStorage.removeItem('all_students_database');
+                renderAllStudentsTable();
+                alert("已成功清空歷史全班學生資料庫！");
+            }
+        }
+
         function resetProgress() {
-            if (confirm("確定要重置所有完成進度、提示扣分與得分嗎？")) {
+            if (confirm("確定要重置目前畫面的個人完成進度、提示扣分與得分嗎？")) {
                 solvedLabs.clear();
                 for(let i=1; i<=10; i++) {
                     usedHints[i] = { hint1: false, hint2: false };
@@ -715,7 +842,32 @@
                     btn.classList.remove('solved');
                     btn.innerText = btn.innerText.replace('✓ ', '');
                 });
-                alert("已完成重置！");
+                alert("個人答題進度已重置！");
+            }
+        }
+
+        function verifyFlag() {
+            const inputFlag = document.getElementById('flag_input').value.trim();
+            const targetFlag = FLAGS[currentLab];
+            const resEl = document.getElementById('flag_result');
+
+            if (inputFlag === targetFlag) {
+                resEl.style.color = "#00ff66";
+                resEl.innerText = `🎉 驗證成功！Lab ${currentLab} 通關！`;
+                
+                if (!solvedLabs.has(currentLab)) {
+                    solvedLabs.add(currentLab);
+                    updateScoreboard();
+                    
+                    const navBtn = document.getElementById(`nav-btn-${currentLab}`);
+                    navBtn.classList.add('solved');
+                    if (!navBtn.innerText.startsWith('✓')) {
+                        navBtn.innerText = '✓ ' + navBtn.innerText;
+                    }
+                }
+            } else {
+                resEl.style.color = "#ff4444";
+                resEl.innerText = "❌ Flag 驗證失敗，請再檢查一次。";
             }
         }
 
@@ -723,131 +875,214 @@
         function submitLab1() {
             const u = document.getElementById('l1_user').value;
             if (u.includes("'") && (u.includes("--") || u.includes("/*") || u.toLowerCase().includes("or"))) {
-                renderConsole({ success: true, message: "Lab 1 成功！已成功繞過驗證登入 Admin 帳號。", flag: FLAGS[1] });
+                renderConsole({
+                    status: 200,
+                    message: "Login successful as Administrator!",
+                    user: "admin",
+                    role: "superuser",
+                    flag: FLAGS[1]
+                }, 40);
             } else {
-                renderConsole({ success: false, message: "登入失敗，請檢查 SQL Payload" });
+                renderConsole({
+                    status: 401,
+                    error: "Invalid username or password",
+                    executed_sql: `SELECT * FROM users WHERE username='${u}' AND password='...'`
+                }, 30);
             }
         }
 
         function submitLab2() {
-            const q = document.getElementById('l2_id').value.toLowerCase();
-            if (q.includes("union") && q.includes("select")) {
-                renderConsole({ success: true, message: "Lab 2 成功！已透過 UNION 跨表查詢擷取 Flag。", flag: FLAGS[2], data: [{ id: 1, username: "admin", role: FLAGS[2] }] });
+            const input = document.getElementById('l2_id').value;
+            const upper = input.toUpperCase();
+            if (upper.includes("UNION") && upper.includes("SELECT") && upper.includes("SECRET_FLAGS")) {
+                renderConsole({
+                    status: 200,
+                    results: [
+                        { id: 1, username: "admin", role: "administrator" },
+                        { id: 1, username: FLAGS[2], role: "flag_found" }
+                    ],
+                    executed_sql: `SELECT id, username, role FROM users WHERE id = ${input}`
+                }, 45);
             } else {
-                renderConsole({ success: false, message: "搜尋無結果" });
+                renderConsole({
+                    status: 200,
+                    results: [
+                        { id: 1, username: "admin", role: "administrator" }
+                    ],
+                    executed_sql: `SELECT id, username, role FROM users WHERE id = ${input}`
+                }, 35);
             }
         }
 
         function submitLab3() {
-            const k = document.getElementById('l3_input').value;
-            const kLower = k.toLowerCase();
-            if (kLower.includes("union") && kLower.includes("select") && (k.includes("/**/") || k !== kLower)) {
-                renderConsole({ success: true, message: "Lab 3 成功！成功繞過 WAF 關鍵字與空格限制。", flag: FLAGS[3] });
+            const input = document.getElementById('l3_input').value;
+            if (input.includes("union") || input.includes("select") || input.includes(" ")) {
+                renderConsole({
+                    status: 403,
+                    error: "WAF Blocked: Detect illegal SQL keywords or whitespace!"
+                }, 20);
+            } else if (input.toUpperCase().includes("UNION") && input.toUpperCase().includes("SELECT")) {
+                renderConsole({
+                    status: 200,
+                    message: "WAF bypassed successfully!",
+                    flag: FLAGS[3]
+                }, 50);
             } else {
-                renderConsole({ success: false, message: "WAF 阻擋：檢測到惡意字元或格式不合" });
+                renderConsole({
+                    status: 200,
+                    message: "Query executed, no result found."
+                }, 30);
             }
         }
 
         function submitLab4() {
-            const q = document.getElementById('l4_id').value.toLowerCase();
-            if (q.includes("cast") || q.includes("convert") || q.includes("extractvalue")) {
-                renderConsole({ success: false, error: `SQLite3 Error: Conversion failed when converting value '${FLAGS[4]}' to data type int.`, flag: FLAGS[4] });
+            const input = document.getElementById('l4_id').value;
+            const upper = input.toUpperCase();
+            if (upper.includes("CAST") || upper.includes("CONVERT") || upper.includes("EXTRACTVALUE")) {
+                renderConsole({
+                    status: 500,
+                    db_error: `SQLite3::SQLException: datatype mismatch / cannot cast string '${FLAGS[4]}' to INTEGER`,
+                    executed_sql: `SELECT * FROM users WHERE id = ${input}`
+                }, 60);
             } else {
-                renderConsole({ success: true, message: "正常查詢結果：使用者資料無誤" });
+                renderConsole({
+                    status: 200,
+                    data: { id: 1, username: "admin" }
+                }, 30);
             }
         }
 
         function submitLab5() {
-            const u = document.getElementById('l5_user').value.toLowerCase();
-            if (u.includes("substr") || u.includes("substring") || u.includes("' and")) {
-                renderConsole({ exists: true, message: "條件成立 (True)", flag: FLAGS[5] });
-            } else {
-                renderConsole({ exists: false, message: "條件不成立 (False)" });
+            const input = document.getElementById('l5_user').value;
+            const targetFlag = FLAGS[5];
+            
+            let isMatch = false;
+            const upper = input.toUpperCase();
+            if (upper.includes("SUBSTR") || upper.includes("SUBSTRING")) {
+                if (input.includes("'F'") || input.includes('"F"') || input.includes(targetFlag)) {
+                    isMatch = true;
+                }
             }
+
+            renderConsole({
+                status: 200,
+                exists: isMatch,
+                hint: isMatch ? "Condition matches! (Flag 就在 secret_flags 中)" : "Condition failed.",
+                flag_preview_hint: isMatch ? `Flag 正確解答為：${targetFlag}` : undefined
+            }, 35);
         }
 
         function submitLab6() {
-            const q = document.getElementById('l6_id').value.toLowerCase();
-            if (q.includes("delay") || q.includes("sleep") || q.includes("benchmark")) {
-                renderConsole({ success: true, message: "查詢完成 (觸發延遲 2100ms)", flag: FLAGS[6] }, 2100);
+            const input = document.getElementById('l6_id').value;
+            const upper = input.toUpperCase();
+            if (upper.includes("DELAY") || upper.includes("SLEEP") || upper.includes("BENCHMARK")) {
+                renderConsole({
+                    status: 200,
+                    response: "OK",
+                    delay_triggered: true,
+                    flag: FLAGS[6]
+                }, 2100);
             } else {
-                renderConsole({ success: true, message: "查詢完成" }, 40);
+                renderConsole({
+                    status: 200,
+                    response: "OK",
+                    delay_triggered: false
+                }, 40);
             }
         }
 
         function submitLab7Update() {
             storedBio = document.getElementById('l7_bio').value;
-            renderConsole({ success: true, message: `Bio 已安全寫入資料庫：${storedBio}` });
+            renderConsole({
+                status: 200,
+                message: "Bio updated in database successfully!",
+                stored_value: storedBio
+            }, 30);
         }
 
         function submitLab7Trigger() {
-            if (storedBio.includes("'") || storedBio.toLowerCase().includes("or")) {
-                renderConsole({ success: true, message: "Lab 7 成功！二次渲染讀取 Bio 時觸發 SQL 語法拼接。", flag: FLAGS[7] });
+            if (!storedBio) {
+                renderConsole({
+                    status: 400,
+                    error: "Please complete Step 1 to store bio first!"
+                }, 20);
+                return;
+            }
+
+            if (storedBio.includes("'") && (storedBio.includes("OR") || storedBio.includes("or") || storedBio.includes("--"))) {
+                renderConsole({
+                    status: 200,
+                    message: "Second-Order Execution Triggered!",
+                    triggered_query: `UPDATE profile_logs SET last_access = NOW() WHERE bio = '${storedBio}'`,
+                    flag: FLAGS[7]
+                }, 55);
             } else {
-                renderConsole({ success: false, message: "Bio 觸發執行正常，無異常語法" });
+                renderConsole({
+                    status: 200,
+                    message: "Profile rendered safely.",
+                    rendered_bio: storedBio
+                }, 35);
             }
         }
 
         function submitLab8() {
-            const cmd = document.getElementById('l8_cmd').value.toLowerCase();
-            if (cmd.includes(";") && (cmd.includes("update") || cmd.includes("insert") || cmd.includes("drop"))) {
-                renderConsole({ success: true, message: "Lab 8 成功！堆疊查詢已成功執行第二條命令。", flag: FLAGS[8] });
+            const cmd = document.getElementById('l8_cmd').value;
+            if (cmd.includes(";")) {
+                renderConsole({
+                    status: 200,
+                    message: "Multiple statements executed successfully!",
+                    stacked_query_detected: true,
+                    flag: FLAGS[8]
+                }, 65);
             } else {
-                renderConsole({ success: false, message: "僅執行單一查詢指令" });
+                renderConsole({
+                    status: 400,
+                    error: "Stacked Query failed: missing semicolon ';' delimiter"
+                }, 30);
             }
         }
 
         function submitLab9() {
-            const name = document.getElementById('l9_name').value.toLowerCase();
-            if (name.includes("%df") || name.includes("\\'") || name.includes("0xdf")) {
-                renderConsole({ success: true, message: "Lab 9 成功！%df 吃掉反斜線 \\，單引號成功逃逸。", flag: FLAGS[9] });
+            const input = document.getElementById('l9_name').value;
+            if (input.includes("%df'") || input.includes("'")) {
+                renderConsole({
+                    status: 200,
+                    message: "Wide-byte injection successful! Backslash was swallowed by GBK byte.",
+                    executed_sql: `SELECT * FROM users WHERE name='運' OR 1=1 --'`,
+                    flag: FLAGS[9]
+                }, 50);
             } else {
-                renderConsole({ success: false, message: "輸入已被安全轉義為 \\'" });
+                renderConsole({
+                    status: 200,
+                    message: "Query executed.",
+                    executed_sql: `SELECT * FROM users WHERE name='${input.replace("'", "\\'")}'`
+                }, 35);
             }
         }
 
         function submitLab10() {
+            const rawJson = document.getElementById('l10_json').value;
             try {
-                const val = document.getElementById('l10_json').value;
-                const parsed = JSON.parse(val);
-                const strVal = String(parsed.id || "").toLowerCase();
-                if (strVal.includes("or") || strVal.includes("'") || strVal.includes("1=1")) {
-                    renderConsole({ success: true, message: "Lab 10 成功！JSON 內部欄位直接拼接至 SQL 語法中爆發漏洞。", flag: FLAGS[10] });
+                const parsed = JSON.parse(rawJson);
+                const idVal = String(parsed.id || "");
+                if (idVal.includes("'") || idVal.toUpperCase().includes("OR")) {
+                    renderConsole({
+                        status: 200,
+                        message: "JSON field extracted and injected into raw SQL query!",
+                        extracted_id: idVal,
+                        flag: FLAGS[10]
+                    }, 45);
                 } else {
-                    renderConsole({ success: false, message: "JSON 內容查詢無結果" });
+                    renderConsole({
+                        status: 200,
+                        data: { id: idVal, status: "normal_query" }
+                    }, 30);
                 }
             } catch (e) {
-                document.getElementById('console').innerText = "JSON 格式錯誤，請檢查語法。";
-            }
-        }
-
-        function verifyFlag() {
-            const user_flag = document.getElementById('flag_input').value.trim();
-            const resEl = document.getElementById('flag_result');
-            
-            if (!user_flag) {
-                resEl.innerText = "請輸入 Flag 後再提交！";
-                resEl.style.color = '#ffb700';
-                return;
-            }
-
-            const validFlags = Object.values(FLAGS);
-            if (validFlags.includes(user_flag)) {
-                resEl.innerText = "🎉 驗證成功！Flag 正確！";
-                resEl.style.color = '#00ff66';
-                
-                if (!solvedLabs.has(currentLab)) {
-                    solvedLabs.add(currentLab);
-                    const btn = document.getElementById(`nav-btn-${currentLab}`);
-                    btn.classList.add('solved');
-                    if (!btn.innerText.includes('✓')) {
-                        btn.innerText = `✓ ${btn.innerText}`;
-                    }
-                    updateScoreboard();
-                }
-            } else {
-                resEl.innerText = "❌ Flag 錯誤，請檢查後重新提交。";
-                resEl.style.color = '#ff4444';
+                renderConsole({
+                    status: 400,
+                    error: "Invalid JSON format payload!"
+                }, 20);
             }
         }
     </script>
