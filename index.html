@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection 互動教學評分系統 (教師權限管控版)</title>
+    <title>SQL Injection 互動教學評分系統 (雙階梯提示扣分版)</title>
     <style>
         * { box-sizing: border-box; }
         body { 
@@ -145,24 +145,52 @@
             color: #000;
         }
         button.teacher-btn:hover { background: #e0a200; }
-        button.hint-btn {
-            padding: 8px 14px;
-            background: #333;
+        
+        /* 提示按鈕樣式 */
+        button.hint-btn-1 {
+            padding: 8px 12px;
+            background: #2b2200;
             color: #ffb700;
             border: 1px solid #ffb700;
             border-radius: 4px;
             cursor: pointer;
             font-size: 13px;
         }
+        button.hint-btn-1:hover { background: #423500; }
+        
+        button.hint-btn-2 {
+            padding: 8px 12px;
+            background: #3b1111;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        button.hint-btn-2:hover { background: #591b1b; }
+
+        button.hint-used {
+            background: #222 !important;
+            color: #666 !important;
+            border-color: #444 !important;
+        }
 
         .hint-box {
             display: none;
             margin-top: 15px;
-            background: #2b2200;
-            border-left: 4px solid #ffb700;
             padding: 12px;
             font-size: 13px;
+            border-radius: 4px;
+        }
+        .hint-box-1 {
+            background: #221e0a;
+            border-left: 4px solid #ffb700;
             color: #ffe082;
+        }
+        .hint-box-2 {
+            background: #281212;
+            border-left: 4px solid #ff6b6b;
+            color: #ffcdd2;
         }
 
         .console-container {
@@ -286,9 +314,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab1()">送出 Payload</button>
-            <button class="hint-btn" onclick="toggleHint(1)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn1_1" onclick="useHint(1, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn1_2" onclick="useHint(1, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint1" class="hint-box">提示：使用單引號 <code>'</code> 閉合欄位，並加上註解符號 <code>--</code> 將密碼比對邏輯忽略。參考 Payload：<code>admin' --</code></div>
+        <div id="hint1_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>使用單引號 <code>'</code> 閉合原本的 SQL 語法欄位，並加上註解符號 <code>--</code> 將後方的密碼比對邏輯忽略。</div>
+        <div id="hint1_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>在 Username 欄位輸入：<code>admin' --</code>，密碼可任意輸入即可成功繞過！</div>
     </div>
 
     <!-- Lab 2 -->
@@ -301,24 +331,28 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab2()">搜尋數據</button>
-            <button class="hint-btn" onclick="toggleHint(2)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn2_1" onclick="useHint(2, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn2_2" onclick="useHint(2, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint2" class="hint-box">提示：確保 UNION 後方的欄位數量與前方的 <code>id, username, role</code> (3個欄位) 相同。參考 Payload：<code>1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags</code></div>
+        <div id="hint2_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>確保 UNION 後方的欄位數量與前方的 <code>id, username, role</code> (3個欄位) 相同。</div>
+        <div id="hint2_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>使用 Payload：<code>1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags</code> 來直接讀出 Flag。</div>
     </div>
 
     <!-- Lab 3 -->
     <div id="lab3" class="panel">
         <h2>Lab 3: 關鍵字黑名單繞過 (WAF Bypass)</h2>
-        <p><strong>目標：</strong> 後端設有 WAF 黑名單，過濾了 <code>UNION</code>, <code>SELECT</code> 與空格。請嘗試繞過過濾。</p>
+        <p><strong>目標：</strong> 後端設有 WAF 黑名單，過濾了小寫 <code>union</code>, <code>select</code> 與空格。請嘗試繞過過濾。</p>
         <div class="form-group">
             <label>Username Search</label>
             <input type="text" id="l3_input" value="" placeholder="請輸入繞過 WAF 的 Payload">
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab3()">送出 Payload</button>
-            <button class="hint-btn" onclick="toggleHint(3)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn3_1" onclick="useHint(3, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn3_2" onclick="useHint(3, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint3" class="hint-box">提示：可以使用 SQL 註解 <code>/**/</code> 代替空格，或使用大小寫混淆/雙寫關鍵字。參考 Payload：<code>UnIOn/**/SeLeCt</code></div>
+        <div id="hint3_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>可以使用 SQL 註解 <code>/**/</code> 代替空格，或使用大小寫混淆來繞過簡單的字串比對。</div>
+        <div id="hint3_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>使用混合大小寫與註解代替空格的 Payload：<code>UnIOn/**/SeLeCt</code>。</div>
     </div>
 
     <!-- Lab 4 -->
@@ -331,9 +365,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab4()">執行查詢</button>
-            <button class="hint-btn" onclick="toggleHint(4)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn4_1" onclick="useHint(4, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn4_2" onclick="useHint(4, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint4" class="hint-box">提示：強制將字串類型的 <code>flag_value</code> 轉型為整數 (INT)，SQLite 轉型失敗時會將原始字串列在報錯訊息中。參考 Payload：<code>1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)</code></div>
+        <div id="hint4_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>強制將字串類型的 <code>flag_value</code> 轉型為整數 (INT)，SQLite 轉型失敗時會將原始字串列在報錯訊息中。</div>
+        <div id="hint4_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入：<code>1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)</code>，即可在 Error 中看到 Flag。</div>
     </div>
 
     <!-- Lab 5 -->
@@ -346,9 +382,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab5()">檢測條件</button>
-            <button class="hint-btn" onclick="toggleHint(5)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn5_1" onclick="useHint(5, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn5_2" onclick="useHint(5, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint5" class="hint-box">提示：利用 <code>SUBSTR(string, pos, length)</code> 測試字元。若回傳 exists: true，代表猜對該位置的字母。參考 Payload：<code>admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F</code></div>
+        <div id="hint5_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>利用 <code>SUBSTR(string, pos, length)</code> 測試字元。若回傳 exists: true，代表猜對該位置的字母。</div>
+        <div id="hint5_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入測試 Payload：<code>admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F</code>。</div>
     </div>
 
     <!-- Lab 6 -->
@@ -361,9 +399,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab6()">發送並測量時間</button>
-            <button class="hint-btn" onclick="toggleHint(6)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn6_1" onclick="useHint(6, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn6_2" onclick="useHint(6, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint6" class="hint-box">提示：觀察回應面板右側顯示的 <code>Execution Time</code>，若超過 2000ms 代表成功觸發延遲條件。參考 Payload：<code>1' AND DELAY --</code></div>
+        <div id="hint6_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>觀察回應面板右側顯示的 <code>Execution Time</code>，若超過 2000ms 代表成功觸發延遲條件。</div>
+        <div id="hint6_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入觸發延遲指令：<code>1' AND DELAY --</code>。</div>
     </div>
 
     <!-- Lab 7 -->
@@ -379,9 +419,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" style="background: #00e5ff;" onclick="submitLab7Trigger()">2. 觸發二次渲染</button>
-            <button class="hint-btn" onclick="toggleHint(7)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn7_1" onclick="useHint(7, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn7_2" onclick="useHint(7, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint7" class="hint-box">提示：儲存時單引號會被正常存入資料庫，直到第二次 Query 被拼接到 Update 語句時才會爆發。參考 Payload：<code>guest' OR '1'='1</code></div>
+        <div id="hint7_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>儲存時單引號會被正常存入資料庫，直到第二次 Query 被拼接到 Update 語句時才會爆發。</div>
+        <div id="hint7_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>在 Step 1 的 Bio 欄位儲存：<code>guest' OR '1'='1</code>，隨後點選按鈕 2 觸發。</div>
     </div>
 
     <!-- Lab 8 -->
@@ -394,9 +436,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab8()">堆疊執行</button>
-            <button class="hint-btn" onclick="toggleHint(8)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn8_1" onclick="useHint(8, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn8_2" onclick="useHint(8, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint8" class="hint-box">提示：分號允許在一筆 Request 中連續執行多條獨立的 SQL 語句 (如 UPDATE / INSERT)。參考 Payload：<code>UPDATE users SET role = 'admin' WHERE id = 2;</code></div>
+        <div id="hint8_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>分號允許在一筆 Request 中連續執行多條獨立的 SQL 語句 (如 UPDATE / INSERT)。</div>
+        <div id="hint8_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入：<code>UPDATE users SET role = 'admin' WHERE id = 2;</code>。</div>
     </div>
 
     <!-- Lab 9 -->
@@ -409,9 +453,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab9()">發送 Payload</button>
-            <button class="hint-btn" onclick="toggleHint(9)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn9_1" onclick="useHint(9, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn9_2" onclick="useHint(9, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint9" class="hint-box">提示：<code>%df</code> 與 <code>\</code> (%5c) 組合時會被解碼為一個繁體/寬位元組字元，從而還原單引號。參考 Payload：<code>%df' OR 1=1 --</code></div>
+        <div id="hint9_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b><code>%df</code> 與 <code>\</code> (%5c) 組合時會被解碼為一個繁體/寬位元組字元，從而還原單引號。</div>
+        <div id="hint9_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入：<code>%df' OR 1=1 --</code>。</div>
     </div>
 
     <!-- Lab 10 -->
@@ -424,9 +470,11 @@
         </div>
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab10()">發送 JSON 請求</button>
-            <button class="hint-btn" onclick="toggleHint(10)">💡 提示</button>
+            <button class="hint-btn-1" id="hbtn10_1" onclick="useHint(10, 1)">💡 提示 1 (扣 5 分)</button>
+            <button class="hint-btn-2" id="hbtn10_2" onclick="useHint(10, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
         </div>
-        <div id="hint10" class="hint-box">提示：後端未對 JSON 提取出的 Value 做型態檢查便直拼進 SQL。參考 Payload：<code>{"id": "1 OR 1=1"}</code></div>
+        <div id="hint10_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>後端未對 JSON 提取出的 Value 做型態檢查便直接拼接到 SQL 語法中。</div>
+        <div id="hint10_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入 JSON 內容：<code>{"id": "1 OR 1=1"}</code>。</div>
     </div>
 
     <!-- 控制台 Console -->
@@ -450,7 +498,6 @@
     </div>
 
     <script>
-        // 教師管理密碼，可於此處自行修改
         const TEACHER_PASS = "teacher123";
 
         const FLAGS = {
@@ -484,15 +531,68 @@
 
         let currentLab = 1;
         const solvedLabs = new Set();
+        
+        // 紀錄提示點擊情況: usedHints[labId] = { hint1: boolean, hint2: boolean }
+        const usedHints = {};
+        for(let i=1; i<=10; i++) {
+            usedHints[i] = { hint1: false, hint2: false };
+        }
+
         const POINTS_PER_LAB = 10;
         let storedBio = "";
         let isTeacherUnlocked = false;
 
+        function calculateTotalScore() {
+            const baseScore = solvedLabs.size * POINTS_PER_LAB;
+            let totalDeduction = 0;
+            
+            for (let i = 1; i <= 10; i++) {
+                if (usedHints[i].hint1) totalDeduction += 5;
+                if (usedHints[i].hint2) totalDeduction += 10;
+            }
+            
+            const finalScore = baseScore - totalDeduction;
+            return finalScore < 0 ? 0 : finalScore; // 不會低於 0 分
+        }
+
         function updateScoreboard() {
             const count = solvedLabs.size;
-            const score = count * POINTS_PER_LAB;
+            const score = calculateTotalScore();
             document.getElementById('score_display').innerText = `🏆 得分: ${score} pts`;
             document.getElementById('progress_display').innerText = `🚩 通關: ${count} / 10`;
+        }
+
+        function useHint(labId, hintLevel) {
+            const boxId = `hint${labId}_${hintLevel}`;
+            const btnId = `hbtn${labId}_${hintLevel}`;
+            const box = document.getElementById(boxId);
+            const btn = document.getElementById(btnId);
+
+            if (hintLevel === 1) {
+                if (!usedHints[labId].hint1) {
+                    if (confirm("確定要開啟【提示 1】嗎？這將扣除 5 分！")) {
+                        usedHints[labId].hint1 = true;
+                        box.style.display = 'block';
+                        btn.classList.add('hint-used');
+                        btn.innerText = "💡 提示 1 (已開啟 -5pt)";
+                        updateScoreboard();
+                    }
+                } else {
+                    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+                }
+            } else if (hintLevel === 2) {
+                if (!usedHints[labId].hint2) {
+                    if (confirm("確定要開啟【提示 2 (含解答)】嗎？這將扣除 10 分！")) {
+                        usedHints[labId].hint2 = true;
+                        box.style.display = 'block';
+                        btn.classList.add('hint-used');
+                        btn.innerText = "🔑 提示 2 含解答 (已開啟 -10pt)";
+                        updateScoreboard();
+                    }
+                } else {
+                    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+                }
+            }
         }
 
         function switchLab(num) {
@@ -502,18 +602,11 @@
             document.getElementById(`lab${num}`).classList.add('active');
             document.getElementById(`nav-btn-${num}`).classList.add('active');
 
-            // 1. 切換關卡時，自動清空 Response Inspector 內容與執行時間
             document.getElementById('console').innerText = "等待發送 Payload...";
             document.getElementById('timer_display').innerText = "Time: 0ms";
             
-            // 2. 切換關卡時，自動清空 Flag 輸入框與驗證結果提示
             document.getElementById('flag_input').value = "";
             document.getElementById('flag_result').innerText = "";
-        }
-
-        function toggleHint(num) {
-            const h = document.getElementById(`hint${num}`);
-            h.style.display = h.style.display === 'block' ? 'none' : 'block';
         }
 
         function renderConsole(data, delayMs = 50) {
@@ -541,7 +634,6 @@
             const answerSec = document.getElementById('answers_section');
 
             if (!isTeacherUnlocked) {
-                // 解鎖驗證
                 const pass = prompt("請輸入教師管理密碼：");
                 if (pass === TEACHER_PASS) {
                     isTeacherUnlocked = true;
@@ -554,7 +646,6 @@
                     alert("❌ 密碼錯誤！");
                 }
             } else {
-                // 重新關鎖
                 isTeacherUnlocked = false;
                 statusEl.innerText = "🔒 未驗證 (關鎖狀態)";
                 statusEl.style.color = "#aaa";
@@ -581,7 +672,7 @@
             const stuClass = document.getElementById('stu_class').value || "未填寫班級";
             const stuNumber = document.getElementById('stu_number').value || "未填寫座號";
             const stuName = document.getElementById('stu_name').value || "未填寫姓名";
-            const score = solvedLabs.size * POINTS_PER_LAB;
+            const score = calculateTotalScore();
             const solvedList = Array.from(solvedLabs).join(';');
 
             const csvContent = "\uFEFF班級,座號,姓名,Session ID,總分,完成關卡數量,已通關Lab列表\n"
@@ -598,8 +689,27 @@
         }
 
         function resetProgress() {
-            if (confirm("確定要重置所有完成進度與得分嗎？")) {
+            if (confirm("確定要重置所有完成進度、提示扣分與得分嗎？")) {
                 solvedLabs.clear();
+                for(let i=1; i<=10; i++) {
+                    usedHints[i] = { hint1: false, hint2: false };
+                    
+                    const b1 = document.getElementById(`hint${i}_1`);
+                    const b2 = document.getElementById(`hint${i}_2`);
+                    if(b1) b1.style.display = 'none';
+                    if(b2) b2.style.display = 'none';
+
+                    const btn1 = document.getElementById(`hbtn${i}_1`);
+                    const btn2 = document.getElementById(`hbtn${i}_2`);
+                    if(btn1) {
+                        btn1.classList.remove('hint-used');
+                        btn1.innerText = "💡 提示 1 (扣 5 分)";
+                    }
+                    if(btn2) {
+                        btn2.classList.remove('hint-used');
+                        btn2.innerText = "🔑 提示 2 含解答 (扣 10 分)";
+                    }
+                }
                 updateScoreboard();
                 document.querySelectorAll('.nav-btn').forEach(btn => {
                     btn.classList.remove('solved');
@@ -723,7 +833,7 @@
 
             const validFlags = Object.values(FLAGS);
             if (validFlags.includes(user_flag)) {
-                resEl.innerText = "🎉 驗證成功！Flag 正確，獲得 10 分！";
+                resEl.innerText = "🎉 驗證成功！Flag 正確！";
                 resEl.style.color = '#00ff66';
                 
                 if (!solvedLabs.has(currentLab)) {
