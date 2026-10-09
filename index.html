@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection 互動教學系統 (雲端 API 防窺版)</title>
+    <title>SQL Injection 互動教學系統 (雲端防窺版)</title>
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Consolas, monospace; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; line-height: 1.5; }
@@ -98,13 +98,14 @@
         </h3>
         <div class="btn-group">
             <button class="action-btn teacher-btn" id="teacher_lock_btn" onclick="toggleTeacherLock()">🔑 輸入密碼解鎖權限</button>
-            <button class="action-btn" style="background: #00e5ff;" onclick="exportCurrentScoreCSV()">💾 匯出目前學生個人成績 (CSV)</button>
-            <button class="action-btn" style="background: #ff4444; color: #fff;" onclick="resetProgress()">🔄 清空目前答題紀錄</button>
         </div>
 
+        <!-- 解鎖後才會顯示的內部管理區塊 -->
         <div id="teacher_admin_section" style="display: none; margin-top: 15px; border-top: 1px dashed #ffb700; padding-top: 15px;">
             <div class="btn-group" style="margin-bottom: 15px;">
+                <button class="action-btn" style="background: #00e5ff; color: #000;" onclick="exportCurrentScoreCSV()">💾 匯出目前學生個人成績 (CSV)</button>
                 <button class="action-btn" style="background: #ffb700; color: #000;" onclick="exportAllStudentsCSV()">📊 匯出全班所有學生成績總表 (CSV)</button>
+                <button class="action-btn" style="background: #ff4444; color: #fff;" onclick="resetProgress()">🔄 清空目前答題紀錄</button>
                 <button class="action-btn" style="background: #e65100; color: #fff;" onclick="clearAllStudentsData()">🗑️ 清空歷史全班學生資料庫</button>
             </div>
 
@@ -307,8 +308,8 @@
     </div>
 
     <script>
-        // ⚠️ 請在此處填入您部屬的 Google Apps Script Web App URL
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz2nY18MfM0XXBLWgl0QBS6VDaWn8l7ZHGogQJEmioRoVTkpPLPJFs9l-0FYpCmJ1RW/exec";
+        // ⚠️ 請填入您的 Google Apps Script 應用程式網址 (需包含 /exec)
+        const GAS_API_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
 
         const sessionId = "ghpages_" + Math.random().toString(36).substring(2, 10);
         document.getElementById('session_display').innerText = `Session: ${sessionId}`;
