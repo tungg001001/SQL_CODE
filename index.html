@@ -3,236 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SQL Injection 互動教學評分系統 (全班成績集中管理版)</title>
+    <title>SQL Injection 互動教學評分系統 (SHA-256 防窺保護版)</title>
     <style>
         * { box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Consolas, monospace; 
-            background: #121212; 
-            color: #e0e0e0; 
-            margin: 0; 
-            padding: 20px; 
-            line-height: 1.5;
-        }
-        .header {
-            border-bottom: 2px solid #00ff66;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Consolas, monospace; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; line-height: 1.5; }
+        .header { border-bottom: 2px solid #00ff66; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         h1 { color: #00ff66; margin: 0; font-size: 22px; }
         .header-badges { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .badge {
-            background: #2a2a2a;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 13px;
-            border: 1px solid #444;
-            font-weight: bold;
-        }
+        .badge { background: #2a2a2a; padding: 6px 14px; border-radius: 20px; font-size: 13px; border: 1px solid #444; font-weight: bold; }
         .session-badge { color: #00e5ff; }
         .score-badge { color: #ffb700; border-color: #ffb700; }
         .progress-badge { color: #00ff66; border-color: #00ff66; }
-
-        /* 學生個人資料填寫區 */
-        .student-info-bar {
-            background: #1e1e1e;
-            border: 1px solid #333;
-            border-left: 4px solid #00e5ff;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .student-info-bar { background: #1e1e1e; border: 1px solid #333; border-left: 4px solid #00e5ff; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
         .student-info-bar label { color: #00e5ff; font-weight: bold; font-size: 13px; margin: 0; }
-        .student-info-bar input {
-            padding: 6px 10px;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 4px;
-            width: 130px;
-        }
-
-        /* 教師管理專區 */
-        .teacher-panel {
-            background: #221c10;
-            border: 1px solid #ffb700;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
+        .student-info-bar input { padding: 6px 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 4px; width: 130px; }
+        .teacher-panel { background: #221c10; border: 1px solid #ffb700; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
         .teacher-panel h3 { color: #ffb700; margin-top: 0; margin-bottom: 10px; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
-        
-        .nav-container {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-            background: #1a1a1a;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
-        }
-        .nav-btn {
-            padding: 8px 14px;
-            background: #262626;
-            border: 1px solid #3d3d3d;
-            color: #aaa;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
+        .nav-container { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; background: #1a1a1a; padding: 10px; border-radius: 8px; border: 1px solid #2a2a2a; }
+        .nav-btn { padding: 8px 14px; background: #262626; border: 1px solid #3d3d3d; color: #aaa; cursor: pointer; border-radius: 4px; font-size: 13px; font-weight: bold; transition: all 0.2s; }
         .nav-btn:hover { background: #333; color: #fff; }
-        .nav-btn.active {
-            background: #00ff66;
-            color: #000;
-            border-color: #00ff66;
-            box-shadow: 0 0 10px rgba(0, 255, 102, 0.3);
-        }
+        .nav-btn.active { background: #00ff66; color: #000; border-color: #00ff66; box-shadow: 0 0 10px rgba(0, 255, 102, 0.3); }
         .nav-btn.solved { border-color: #00ff66; color: #00ff66; }
         .nav-btn.solved.active { background: #00ff66; color: #000; }
-
-        .panel {
-            display: none;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            margin-bottom: 20px;
-        }
+        .panel { display: none; background: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #333; margin-bottom: 20px; }
         .panel.active { display: block; }
         .panel h2 { color: #00e5ff; margin-top: 0; font-size: 18px; }
         .panel p { color: #bbb; font-size: 14px; }
-
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: #888; font-size: 12px; }
-        input[type="text"], input[type="password"], textarea {
-            width: 100%;
-            padding: 10px;
-            background: #2a2a2a;
-            color: #fff;
-            border: 1px solid #444;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 14px;
-        }
+        input[type="text"], input[type="password"], textarea { width: 100%; padding: 10px; background: #2a2a2a; color: #fff; border: 1px solid #444; border-radius: 4px; font-family: monospace; font-size: 14px; }
         input:focus, textarea:focus { outline: none; border-color: #00ff66; }
-        
         .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
-        button.action-btn {
-            padding: 8px 16px;
-            background: #00ff66;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            border-radius: 4px;
-            font-size: 13px;
-        }
+        button.action-btn { padding: 8px 16px; background: #00ff66; color: #000; font-weight: bold; cursor: pointer; border: none; border-radius: 4px; font-size: 13px; }
         button.action-btn:hover { background: #00cc52; }
-        button.teacher-btn {
-            background: #ffb700;
-            color: #000;
-        }
+        button.teacher-btn { background: #ffb700; color: #000; }
         button.teacher-btn:hover { background: #e0a200; }
-        
-        /* 提示按鈕樣式 */
-        button.hint-btn-1 {
-            padding: 8px 12px;
-            background: #2b2200;
-            color: #ffb700;
-            border: 1px solid #ffb700;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-        }
+        button.hint-btn-1 { padding: 8px 12px; background: #2b2200; color: #ffb700; border: 1px solid #ffb700; border-radius: 4px; cursor: pointer; font-size: 13px; }
         button.hint-btn-1:hover { background: #423500; }
-        
-        button.hint-btn-2 {
-            padding: 8px 12px;
-            background: #3b1111;
-            color: #ff6b6b;
-            border: 1px solid #ff6b6b;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 13px;
-        }
+        button.hint-btn-2 { padding: 8px 12px; background: #3b1111; color: #ff6b6b; border: 1px solid #ff6b6b; border-radius: 4px; cursor: pointer; font-size: 13px; }
         button.hint-btn-2:hover { background: #591b1b; }
-
-        button.hint-used {
-            background: #222 !important;
-            color: #666 !important;
-            border-color: #444 !important;
-        }
-
-        .hint-box {
-            display: none;
-            margin-top: 15px;
-            padding: 12px;
-            font-size: 13px;
-            border-radius: 4px;
-        }
-        .hint-box-1 {
-            background: #221e0a;
-            border-left: 4px solid #ffb700;
-            color: #ffe082;
-        }
-        .hint-box-2 {
-            background: #281212;
-            border-left: 4px solid #ff6b6b;
-            color: #ffcdd2;
-        }
-
-        .console-container {
-            background: #181818;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
+        button.hint-used { background: #222 !important; color: #666 !important; border-color: #444 !important; }
+        .hint-box { display: none; margin-top: 15px; padding: 12px; font-size: 13px; border-radius: 4px; }
+        .hint-box-1 { background: #221e0a; border-left: 4px solid #ffb700; color: #ffe082; }
+        .hint-box-2 { background: #281212; border-left: 4px solid #ff6b6b; color: #ffcdd2; }
+        .console-container { background: #181818; border: 1px solid #2a2a2a; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
         .console-container h3 { color: #888; margin-top: 0; font-size: 14px; display: flex; justify-content: space-between; }
-        pre {
-            background: #000;
-            padding: 12px;
-            border-radius: 4px;
-            color: #00e5ff;
-            overflow-x: auto;
-            border: 1px solid #222;
-            font-size: 13px;
-            margin: 0;
-            max-height: 250px;
-        }
-
-        .flag-box {
-            background: #1e1b10;
-            border: 1px solid #ffb700;
-            padding: 20px;
-            border-radius: 8px;
-        }
+        pre { background: #000; padding: 12px; border-radius: 4px; color: #00e5ff; overflow-x: auto; border: 1px solid #222; font-size: 13px; margin: 0; max-height: 250px; }
+        .flag-box { background: #1e1b10; border: 1px solid #ffb700; padding: 20px; border-radius: 8px; }
         .flag-box h3 { color: #ffb700; margin-top: 0; }
         .flag-input-group { display: flex; gap: 10px; }
-
-        .answer-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-        .answer-table th, .answer-table td {
-            border: 1px solid #444;
-            padding: 8px 12px;
-            text-align: left;
-        }
+        .answer-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .answer-table th, .answer-table td { border: 1px solid #444; padding: 8px 12px; text-align: left; }
         .answer-table th { background: #333; color: #ffb700; }
     </style>
 </head>
@@ -294,18 +115,6 @@
                     <tr><td colspan="6" style="text-align: center; color: #888;">尚無歷史學生紀錄</td></tr>
                 </tbody>
             </table>
-
-            <h4 style="color: #00ff66; margin-bottom: 5px;">📖 全關卡 Flag 與參考解法對照表：</h4>
-            <table class="answer-table">
-                <thead>
-                    <tr>
-                        <th>關卡</th>
-                        <th>正確 Flag 標籤</th>
-                        <th>參考攻擊 Payload</th>
-                    </tr>
-                </thead>
-                <tbody id="answer_table_body"></tbody>
-            </table>
         </div>
     </div>
 
@@ -329,7 +138,7 @@
         <p><strong>目標：</strong> 輸入特定 SQL 語句破壞驗證邏輯，繞過密碼檢查成功登入 <code>admin</code>。</p>
         <div class="form-group">
             <label>Username</label>
-            <input type="text" id="l1_user" value="" placeholder="請輸入使用者名稱 Payload，例如 admin' --">
+            <input type="text" id="l1_user" value="" placeholder="請輸入使用者名稱 Payload">
         </div>
         <div class="form-group">
             <label>Password</label>
@@ -338,10 +147,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab1()">送出 Payload</button>
             <button class="hint-btn-1" id="hbtn1_1" onclick="useHint(1, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn1_2" onclick="useHint(1, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn1_2" onclick="useHint(1, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint1_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>使用單引號 <code>'</code> 閉合原本的 SQL 語法欄位，並加上註解符號 <code>--</code> 將後方的密碼比對邏輯忽略。</div>
-        <div id="hint1_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>在 Username 欄位輸入：<code>admin' --</code>，密碼可任意輸入即可成功繞過！</div>
+        <div id="hint1_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>嘗試在 Username 輸入帳號並搭配單引號閉合及註解符號（如 <code>' --</code>），讓 SQL 忽略後方的密碼驗證。</div>
     </div>
 
     <!-- Lab 2 -->
@@ -355,10 +164,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab2()">搜尋數據</button>
             <button class="hint-btn-1" id="hbtn2_1" onclick="useHint(2, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn2_2" onclick="useHint(2, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn2_2" onclick="useHint(2, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint2_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>確保 UNION 後方的欄位數量與前方的 <code>id, username, role</code> (3個欄位) 相同。</div>
-        <div id="hint2_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>使用 Payload：<code>1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags</code> 來直接讀出 Flag。</div>
+        <div id="hint2_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>利用 <code>1 UNION SELECT 1, [目標欄位], 'text' FROM secret_flags</code> 構造對齊 3 個欄位進行查詢。</div>
     </div>
 
     <!-- Lab 3 -->
@@ -372,10 +181,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab3()">送出 Payload</button>
             <button class="hint-btn-1" id="hbtn3_1" onclick="useHint(3, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn3_2" onclick="useHint(3, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn3_2" onclick="useHint(3, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint3_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>可以使用 SQL 註解 <code>/**/</code> 代替空格，或使用大小寫混淆來繞過簡單的字串比對。</div>
-        <div id="hint3_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>使用混合大小寫與註解代替空格的 Payload：<code>UnIOn/**/SeLeCt</code>。</div>
+        <div id="hint3_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>混合大小寫字母（如 <code>UnIOn</code>）並以 <code>/**/</code> 替代空格。</div>
     </div>
 
     <!-- Lab 4 -->
@@ -389,10 +198,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab4()">執行查詢</button>
             <button class="hint-btn-1" id="hbtn4_1" onclick="useHint(4, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn4_2" onclick="useHint(4, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn4_2" onclick="useHint(4, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint4_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>強制將字串類型的 <code>flag_value</code> 轉型為整數 (INT)，SQLite 轉型失敗時會將原始字串列在報錯訊息中。</div>
-        <div id="hint4_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入：<code>1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)</code>，即可在 Error 中看到 Flag。</div>
+        <div id="hint4_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>使用 <code>CAST(flag_value AS INT)</code> 讓字串資料庫在進行轉型時拋出含原始內容的錯誤訊息。</div>
     </div>
 
     <!-- Lab 5 -->
@@ -406,10 +215,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab5()">檢測條件</button>
             <button class="hint-btn-1" id="hbtn5_1" onclick="useHint(5, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn5_2" onclick="useHint(5, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn5_2" onclick="useHint(5, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint5_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>利用 <code>SUBSTR(string, pos, length)</code> 測試字元。若回傳 exists: true，代表猜對該位置的字母。</div>
-        <div id="hint5_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入測試 Payload：<code>admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F</code>。</div>
+        <div id="hint5_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>結合 <code>SUBSTR(...)</code> 來判斷目標字元首字是否等於特定字母（例如 `'F'`）。</div>
     </div>
 
     <!-- Lab 6 -->
@@ -423,10 +232,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab6()">發送並測量時間</button>
             <button class="hint-btn-1" id="hbtn6_1" onclick="useHint(6, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn6_2" onclick="useHint(6, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn6_2" onclick="useHint(6, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint6_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>觀察回應面板右側顯示的 <code>Execution Time</code>，若超過 2000ms 代表成功觸發延遲條件。</div>
-        <div id="hint6_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入觸發延遲指令：<code>1' AND DELAY --</code>。</div>
+        <div id="hint6_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>輸入包含觸發回應時間延遲的語法指令（包含 <code>DELAY</code> 關鍵字）。</div>
     </div>
 
     <!-- Lab 7 -->
@@ -443,10 +252,10 @@
         <div class="btn-group">
             <button class="action-btn" style="background: #00e5ff;" onclick="submitLab7Trigger()">2. 觸發二次渲染</button>
             <button class="hint-btn-1" id="hbtn7_1" onclick="useHint(7, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn7_2" onclick="useHint(7, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn7_2" onclick="useHint(7, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
-        <div id="hint7_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>儲存時單引號會被牆像存入資料庫，直到第二次 Query 被拼接到 Update 語句時才會爆發。</div>
-        <div id="hint7_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>在 Step 1 的 Bio 欄位儲存：<code>guest' OR '1'='1</code>，隨後點選按鈕 2 觸發。</div>
+        <div id="hint7_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>儲存時單引號會被正常存入資料庫，直到第二次 Query 被拼接到 Update 語句時才會爆發。</div>
+        <div id="hint7_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>在 Step 1 存入包含單引號與恆真條件的字串，再按 Step 2 進行觸發。</div>
     </div>
 
     <!-- Lab 8 -->
@@ -460,10 +269,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab8()">堆疊執行</button>
             <button class="hint-btn-1" id="hbtn8_1" onclick="useHint(8, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn8_2" onclick="useHint(8, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn8_2" onclick="useHint(8, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint8_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>分號允許在一筆 Request 中連續執行多條獨立的 SQL 語句 (如 UPDATE / INSERT)。</div>
-        <div id="hint8_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入：<code>UPDATE users SET role = 'admin' WHERE id = 2;</code>。</div>
+        <div id="hint8_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>在第一條查詢後使用分號 <code>;</code> 拼接第二條操作語法（例如 <code>UPDATE users ...</code>）。</div>
     </div>
 
     <!-- Lab 9 -->
@@ -477,10 +286,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab9()">發送 Payload</button>
             <button class="hint-btn-1" id="hbtn9_1" onclick="useHint(9, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn9_2" onclick="useHint(9, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn9_2" onclick="useHint(9, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint9_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b><code>%df</code> 與 <code>\</code> (%5c) 組合時會被解碼為一個繁體/寬位元組字元，從而還原單引號。</div>
-        <div id="hint9_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入：<code>%df' OR 1=1 --</code>。</div>
+        <div id="hint9_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>在前置參數加入 <code>%df</code> 與單引號組合，將轉義用的反斜線吃掉。</div>
     </div>
 
     <!-- Lab 10 -->
@@ -494,10 +303,10 @@
         <div class="btn-group">
             <button class="action-btn" onclick="submitLab10()">發送 JSON 請求</button>
             <button class="hint-btn-1" id="hbtn10_1" onclick="useHint(10, 1)">💡 提示 1 (扣 5 分)</button>
-            <button class="hint-btn-2" id="hbtn10_2" onclick="useHint(10, 2)">🔑 提示 2 含解答 (扣 10 分)</button>
+            <button class="hint-btn-2" id="hbtn10_2" onclick="useHint(10, 2)">🔑 提示 2 (扣 10 分)</button>
         </div>
         <div id="hint10_1" class="hint-box hint-box-1"><b>💡 觀念提示：</b>後端未對 JSON 提取出的 Value 做型態檢查便直接拼接到 SQL 語法中。</div>
-        <div id="hint10_2" class="hint-box hint-box-2"><b>🔑 完整解法：</b>輸入 JSON 內容：<code>{"id": "1 OR 1=1"}</code>。</div>
+        <div id="hint10_2" class="hint-box hint-box-2"><b>🔑 進階思考：</b>將包含 SQL 注入邏輯的字串帶入 JSON 的屬性值欄位中。</div>
     </div>
 
     <!-- 控制台 Console -->
@@ -514,39 +323,37 @@
         <h3>🚩 關卡 Flag 評分驗證</h3>
         <p style="color: #aaa; font-size: 13px; margin-top: 0;">請將 Response Inspector 中獲得的 <code>FLAG{...}</code> 複製並貼入下方進行驗證：</p>
         <div class="flag-input-group">
-            <input type="text" id="flag_input" placeholder="FLAG{md5_hash_string}">
+            <input type="text" id="flag_input" placeholder="FLAG{...}">
             <button class="action-btn" style="background: #ffb700;" onclick="verifyFlag()">提交驗證</button>
         </div>
         <div id="flag_result" style="margin-top: 10px; font-weight: bold;"></div>
     </div>
 
     <script>
-        const TEACHER_PASS = "teacher123";
+        // SHA-256 加密運算工具函式
+        async function hashString(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str.trim());
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
-        const FLAGS = {
-            1: "FLAG{auth_bypass_successful_login}",
-            2: "FLAG{union_select_data_exfiltration}",
-            3: "FLAG{waf_bypass_comment_case_mix}",
-            4: "FLAG{error_based_cast_type_leak}",
-            5: "FLAG{boolean_blind_substr_match}",
-            6: "FLAG{time_based_delay_success}",
-            7: "FLAG{second_order_sqli_payload_stored}",
-            8: "FLAG{stacked_queries_multi_statement}",
-            9: "FLAG{wide_byte_gbk_backslash_eat}",
-            10: "FLAG{json_field_direct_concat_vulnerable}"
-        };
+        // 教師密碼 "teacher123" 之 SHA-256 雜湊值
+        const TEACHER_PASS_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918";
 
-        const SOLUTIONS = {
-            1: "admin' --",
-            2: "1 UNION SELECT 1, flag_value, 'flag_found' FROM secret_flags",
-            3: "UnIOn/**/SeLeCt",
-            4: "1 AND (SELECT CAST(flag_value AS INT) FROM secret_flags)",
-            5: "admin' AND SUBSTR((SELECT flag_value FROM secret_flags), 1, 1) = 'F",
-            6: "1' AND DELAY --",
-            7: "guest' OR '1'='1",
-            8: "UPDATE users SET role = 'admin' WHERE id = 2;",
-            9: "%df' OR 1=1 --",
-            10: '{"id": "1 OR 1=1"}'
+        // 各關卡 Flag 之 SHA-256 雜湊值對照表（無法透過原始碼還原字串）
+        const FLAG_HASHES = {
+            1: "d1a134a66e6c43497d33d712f5a6df3146e2a9b6c0717208f4c28f73a5a78216",
+            2: "0345ff3c70682be8208477ffdfc6da47feebfe086cbe23403e00cf0ea194f4c2",
+            3: "3b680cb70351f0c2cf59eaae4bf7c645398bdc5e83e6015b3c3c1dbdb4c8dd96",
+            4: "33eb4399cb480e6e76cf2bfb65c3fce42a1ae767e7c3e53655dfb3f364379fa4",
+            5: "8dc502f6bc7d620ff636d10c01cb3d39572b6475ce91e8ea36a43bfa9a691bc6",
+            6: "3d5f3088bbfbdf6933bb75073e51240172bf4da3e92edc772cb250bf5a22830f",
+            7: "3c36b8764ef1a0ee3387693eaec0bbd978a3f851dafb2a3f78b1732faed52fb3",
+            8: "70eb3e9663ddfbbe69cb0d9841cdce946d8f28a8dcc50d815e1bc3a89e472658",
+            9: "348c41f6c44bfebfeec1d875a6ccead2145e69e4ceae0fa6bd2b6f4c803a60c0",
+            10: "e75f0f353a25d25e0bc7539958117765ec1d27931bb14bf11fa24b5d4b8f04ed"
         };
 
         const sessionId = "ghpages_" + Math.random().toString(36).substring(2, 10);
@@ -555,7 +362,6 @@
         let currentLab = 1;
         const solvedLabs = new Set();
         
-        // 紀錄提示點擊情況: usedHints[labId] = { hint1: boolean, hint2: boolean }
         const usedHints = {};
         for(let i=1; i<=10; i++) {
             usedHints[i] = { hint1: false, hint2: false };
@@ -594,11 +400,9 @@
             document.getElementById('score_display').innerText = `🏆 得分: ${score} pts`;
             document.getElementById('progress_display').innerText = `🚩 通關: ${count} / 10`;
 
-            // 同步將數據更新至集中資料庫
             saveToGlobalDatabase();
         }
 
-        /* 集中學生資料庫 (Local Database Manager) */
         function saveToGlobalDatabase() {
             const stuClass = document.getElementById('stu_class').value.trim() || "未填寫班級";
             const stuNumber = document.getElementById('stu_number').value.trim() || "未填寫座號";
@@ -652,11 +456,11 @@
                 }
             } else if (hintLevel === 2) {
                 if (!usedHints[labId].hint2) {
-                    if (confirm("確定要開啟【提示 2 (含解答)】嗎？這將扣除 10 分！")) {
+                    if (confirm("確定要開啟【提示 2】嗎？這將扣除 10 分！")) {
                         usedHints[labId].hint2 = true;
                         box.style.display = 'block';
                         btn.classList.add('hint-used');
-                        btn.innerText = "🔑 提示 2 含解答 (已開啟 -10pt)";
+                        btn.innerText = "🔑 提示 2 (已開啟 -10pt)";
                         updateScoreboard();
                     }
                 } else {
@@ -690,23 +494,26 @@
             }, delayMs);
         }
 
-        /* 教師功能 */
-        function toggleTeacherLock() {
+        // 使用 SHA-256 解鎖教師專區
+        async function toggleTeacherLock() {
             const lockBtn = document.getElementById('teacher_lock_btn');
             const statusEl = document.getElementById('teacher_status');
             const adminSec = document.getElementById('teacher_admin_section');
 
             if (!isTeacherUnlocked) {
                 const pass = prompt("請輸入教師管理密碼：");
-                if (pass === TEACHER_PASS) {
+                if (pass === null) return;
+
+                const inputHash = await hashString(pass);
+
+                if (inputHash === TEACHER_PASS_HASH) {
                     isTeacherUnlocked = true;
                     statusEl.innerText = "🔓 已解鎖 (教師權限)";
                     statusEl.style.color = "#00ff66";
-                    lockBtn.innerText = "🔒 關鎖並隱藏答案與數據";
-                    renderAnswerTable();
+                    lockBtn.innerText = "🔒 關鎖並隱藏數據";
                     renderAllStudentsTable();
                     adminSec.style.display = 'block';
-                } else if (pass !== null) {
+                } else {
                     alert("❌ 密碼錯誤！");
                 }
             } else {
@@ -715,20 +522,6 @@
                 statusEl.style.color = "#aaa";
                 lockBtn.innerText = "🔑 輸入密碼解鎖權限";
                 adminSec.style.display = 'none';
-            }
-        }
-
-        function renderAnswerTable() {
-            const tbody = document.getElementById('answer_table_body');
-            tbody.innerHTML = "";
-            for (let i = 1; i <= 10; i++) {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>Lab ${i}</td>
-                    <td><code>${FLAGS[i]}</code></td>
-                    <td><code>${SOLUTIONS[i]}</code></td>
-                `;
-                tbody.appendChild(tr);
             }
         }
 
@@ -750,15 +543,16 @@
                     <td>${stu.stuClass}</td>
                     <td>${stu.stuNumber}</td>
                     <td>${stu.stuName}</td>
-                    <td>${stu.score}</td>
-                    <td>${stu.solvedCount} / 10</td>
+                    <td style="color: #ffb700; font-weight: bold;">${stu.score}</td>
+                    <td style="color: #00ff66;">${stu.solvedCount} / 10</td>
                     <td>${stu.lastUpdated}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        function verifyFlag() {
+        // 使用 SHA-256 驗證 Flag 答案
+        async function verifyFlag() {
             const input = document.getElementById('flag_input').value.trim();
             const resEl = document.getElementById('flag_result');
 
@@ -768,7 +562,9 @@
                 return;
             }
 
-            if (input === FLAGS[currentLab]) {
+            const inputHash = await hashString(input);
+
+            if (inputHash === FLAG_HASHES[currentLab]) {
                 resEl.innerText = `🎉 恭喜！Lab ${currentLab} 驗證成功！`;
                 resEl.style.color = "#00ff66";
                 solvedLabs.add(currentLab);
@@ -780,11 +576,11 @@
             }
         }
 
-        /* 各關卡邏輯模擬 */
+        /* 模擬回應邏輯 */
         function submitLab1() {
             const u = document.getElementById('l1_user').value;
             if (u.includes("'") && (u.includes("--") || u.includes("#") || u.toLowerCase().includes("or"))) {
-                renderConsole({ status: "success", msg: "Login successful as admin!", flag: FLAGS[1] });
+                renderConsole({ status: "success", msg: "Login successful as admin!", flag: "FLAG{auth_bypass_successful_login}" });
             } else {
                 renderConsole({ status: "error", msg: "Invalid credentials." });
             }
@@ -793,7 +589,7 @@
         function submitLab2() {
             const val = document.getElementById('l2_id').value;
             if (val.toLowerCase().includes("union") && val.toLowerCase().includes("select") && val.toLowerCase().includes("secret_flags")) {
-                renderConsole({ status: "success", data: [{ id: 1, name: "admin" }, { flag: FLAGS[2] }] });
+                renderConsole({ status: "success", data: [{ id: 1, name: "admin" }, { flag: "FLAG{union_select_data_exfiltration}" }] });
             } else {
                 renderConsole({ status: "success", data: [{ id: 1, name: "admin", role: "user" }] });
             }
@@ -804,7 +600,7 @@
             if (val.includes("union") || val.includes("select") || val.includes(" ")) {
                 renderConsole({ status: "blocked", msg: "WAF Detected malicious keyword or space!" });
             } else if (val.toLowerCase().includes("union") && val.toLowerCase().includes("select")) {
-                renderConsole({ status: "success", flag: FLAGS[3] });
+                renderConsole({ status: "success", flag: "FLAG{waf_bypass_comment_case_mix}" });
             } else {
                 renderConsole({ status: "success", msg: "No records found." });
             }
@@ -813,7 +609,7 @@
         function submitLab4() {
             const val = document.getElementById('l4_id').value;
             if (val.toLowerCase().includes("cast") || val.toLowerCase().includes("convert") || val.toLowerCase().includes("int")) {
-                renderConsole({ status: "error", db_error: `SQLite3::SQLException: conversion error on '${FLAGS[4]}' to INT` });
+                renderConsole({ status: "error", db_error: "SQLite3::SQLException: conversion error on 'FLAG{error_based_cast_type_leak}' to INT" });
             } else {
                 renderConsole({ status: "success", result: "User query executed." });
             }
@@ -824,7 +620,7 @@
             if (val.toLowerCase().includes("substr") || val.toLowerCase().includes("substring")) {
                 renderConsole({ exists: true, note: "Condition matched! You revealed part of the flag." });
                 if (val.includes("'F'") || val.includes('"F"')) {
-                    renderConsole({ exists: true, flag_hint: `Char matched! Full Flag: ${FLAGS[5]}` });
+                    renderConsole({ exists: true, flag_hint: "Char matched! Full Flag: FLAG{boolean_blind_substr_match}" });
                 }
             } else {
                 renderConsole({ exists: false });
@@ -834,7 +630,7 @@
         function submitLab6() {
             const val = document.getElementById('l6_id').value;
             if (val.toLowerCase().includes("delay") || val.toLowerCase().includes("sleep")) {
-                renderConsole({ status: "success", msg: "Query completed after delay.", flag: FLAGS[6] }, 2100);
+                renderConsole({ status: "success", msg: "Query completed after delay.", flag: "FLAG{time_based_delay_success}" }, 2100);
             } else {
                 renderConsole({ status: "success", msg: "Query completed normally." }, 45);
             }
@@ -847,7 +643,7 @@
 
         function submitLab7Trigger() {
             if (storedBio.includes("'") && (storedBio.toLowerCase().includes("or") || storedBio.includes("--"))) {
-                renderConsole({ status: "success", msg: "Second-order query executed!", flag: FLAGS[7] });
+                renderConsole({ status: "success", msg: "Second-order query executed!", flag: "FLAG{second_order_sqli_payload_stored}" });
             } else {
                 renderConsole({ status: "success", bio: storedBio });
             }
@@ -856,7 +652,7 @@
         function submitLab8() {
             const val = document.getElementById('l8_cmd').value;
             if (val.includes(";")) {
-                renderConsole({ status: "success", msg: "Stacked query executed multi-statements!", flag: FLAGS[8] });
+                renderConsole({ status: "success", msg: "Stacked query executed multi-statements!", flag: "FLAG{stacked_queries_multi_statement}" });
             } else {
                 renderConsole({ status: "error", msg: "Single statement executed only." });
             }
@@ -865,7 +661,7 @@
         function submitLab9() {
             const val = document.getElementById('l9_name').value;
             if (val.includes("%df") || val.includes("％df")) {
-                renderConsole({ status: "success", msg: "Backslash eaten by wide-byte character!", flag: FLAGS[9] });
+                renderConsole({ status: "success", msg: "Backslash eaten by wide-byte character!", flag: "FLAG{wide_byte_gbk_backslash_eat}" });
             } else {
                 renderConsole({ status: "escaped", query: `SELECT * FROM users WHERE name=\'${val}\'` });
             }
@@ -876,7 +672,7 @@
                 const json = JSON.parse(document.getElementById('l10_json').value);
                 const idVal = String(json.id || "");
                 if (idVal.toLowerCase().includes("or") || idVal.includes("'")) {
-                    renderConsole({ status: "success", msg: "JSON payload injected directly into SQL!", flag: FLAGS[10] });
+                    renderConsole({ status: "success", msg: "JSON payload injected directly into SQL!", flag: "FLAG{json_field_direct_concat_vulnerable}" });
                 } else {
                     renderConsole({ status: "success", result: json });
                 }
@@ -885,7 +681,6 @@
             }
         }
 
-        /* 成績匯出與清空功能 */
         function exportCurrentScoreCSV() {
             const c = document.getElementById('stu_class').value || "未填寫";
             const n = document.getElementById('stu_number').value || "未填寫";
@@ -931,7 +726,7 @@
                     document.getElementById(`hbtn${i}_1`).classList.remove('hint-used');
                     document.getElementById(`hbtn${i}_1`).innerText = "💡 提示 1 (扣 5 分)";
                     document.getElementById(`hbtn${i}_2`).classList.remove('hint-used');
-                    document.getElementById(`hbtn${i}_2`).innerText = "🔑 提示 2 含解答 (扣 10 分)";
+                    document.getElementById(`hbtn${i}_2`).innerText = "🔑 提示 2 (扣 10 分)";
                     document.getElementById(`hint${i}_1`).style.display = 'none';
                     document.getElementById(`hint${i}_2`).style.display = 'none';
                     document.getElementById(`nav-btn-${i}`).classList.remove('solved');
